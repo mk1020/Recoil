@@ -45,6 +45,26 @@ export interface RecoilEnv {
 
 export const RecoilEnv: RecoilEnv;
 
+// Performance monitoring (development only)
+export interface PerformanceStats {
+  atomUpdatesAttempted: number;
+  atomUpdatesPrevented: number;
+  selectorRecalculationsAttempted: number;
+  selectorRecalculationsPrevented: number;
+  transactionUpdatesAttempted: number;
+  transactionUpdatesPrevented: number;
+}
+
+export interface RecoilPerformanceStats {
+  enableLogging(enabled: boolean): void;
+  isLoggingEnabled(): boolean;
+  getStats(): PerformanceStats;
+  resetStats(): void;
+  printStats(): void;
+}
+
+export const RecoilPerformanceStats: RecoilPerformanceStats;
+
 /**
  * Root component for managing Recoil state.  Most Recoil hooks should be
  * called from a component nested in a <RecoilRoot>
@@ -175,6 +195,10 @@ export interface CallbackInterface {
   snapshot: Snapshot;
   gotoSnapshot: (snapshot: Snapshot) => void;
   transact_UNSTABLE: (cb: (i: TransactionInterface_UNSTABLE) => void) => void;
+  transactDeferred_UNSTABLE: (
+    cb: (i: TransactionInterface_UNSTABLE) => void,
+    options?: { waitForInteractions?: boolean }
+  ) => void;
 }
 
 // selector.d.ts
