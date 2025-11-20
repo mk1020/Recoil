@@ -27,6 +27,7 @@ const env: RecoilEnv = {
     'recoil_sync_external_store',
     'recoil_suppress_rerender_in_callback',
     'recoil_memory_managament_2020',
+    'recoil_transition_support',
   ]),
 };
 

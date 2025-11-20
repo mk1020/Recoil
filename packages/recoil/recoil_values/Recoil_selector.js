@@ -109,6 +109,7 @@ const {retainedByOptionWithDefault} = require('../core/Recoil_Retention');
 const {recoilCallback} = require('../hooks/Recoil_useRecoilCallback');
 const concatIterables = require('recoil-shared/util/Recoil_concatIterables');
 const deepFreezeValue = require('recoil-shared/util/Recoil_deepFreezeValue');
+const equal = require('fast-deep-equal');
 const err = require('recoil-shared/util/Recoil_err');
 const filterIterable = require('recoil-shared/util/Recoil_filterIterable');
 const gkx = require('recoil-shared/util/Recoil_gkx');
@@ -1062,6 +1063,27 @@ function selector<T>(
       ) {
         deepFreezeValue(loadable.contents);
       }
+    }
+
+    // Check if the new value is deeply equal to the existing value
+    // to prevent unnecessary re-renders
+    const existingLoadable = state.atomValues.get(key);
+    if (
+      existingLoadable != null &&
+      existingLoadable.state === loadable.state &&
+      loadable.state === 'hasValue' &&
+      equal(existingLoadable.contents, loadable.contents)
+    ) {
+      // Value hasn't changed, don't update state.atomValues
+      // but still update the cache with new dependency route
+      try {
+        cache.set(depValuesToDepRoute(depValues), loadable);
+      } catch (error) {
+        throw err(
+          `Problem with setting cache for selector "${key}": ${error.message}`,
+        );
+      }
+      return;
     }
 
     state.atomValues.set(key, loadable);

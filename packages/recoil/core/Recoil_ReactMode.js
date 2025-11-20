@@ -32,28 +32,57 @@ let ReactRendererVersionMismatchWarnOnce = false;
 // Since React goes through a proxy dispatcher and the current renderer can
 // change we can't simply check if `React.useSyncExternalStore()` is defined.
 function currentRendererSupportsUseSyncExternalStore(): boolean {
-  // $FlowFixMe[incompatible-use]
-  const {ReactCurrentDispatcher, ReactCurrentOwner} =
-    /* $FlowFixMe[prop-missing] This workaround was approved as a safer mechanism
-     * to detect if the current renderer supports useSyncExternalStore()
-     * https://fb.workplace.com/groups/reactjs/posts/9558682330846963/ */
-    React.__SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED;
-  const dispatcher =
-    ReactCurrentDispatcher?.current ?? ReactCurrentOwner.currentDispatcher;
-  const isUseSyncExternalStoreSupported =
-    dispatcher.useSyncExternalStore != null;
-  if (
-    useSyncExternalStore &&
-    !isUseSyncExternalStoreSupported &&
-    !ReactRendererVersionMismatchWarnOnce
-  ) {
-    ReactRendererVersionMismatchWarnOnce = true;
-    recoverableViolation(
-      'A React renderer without React 18+ API support is being used with React 18+.',
-      'recoil',
-    );
+  try {
+    // Support for React 19+
+    // $FlowFixMe[incompatible-use]
+    const internals = React.__SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED;
+    
+    // React 19 changed the internal structure
+    const ReactCurrentDispatcher = internals.ReactCurrentDispatcher || internals.ReactCurrentDispatcher$1;
+    const ReactCurrentOwner = internals.ReactCurrentOwner || internals.ReactCurrentOwner$1;
+    
+    if (!ReactCurrentDispatcher) {
+      // If we can't find the dispatcher, assume useSyncExternalStore is supported
+      // since React 19+ has it by default
+      if (!ReactRendererVersionMismatchWarnOnce) {
+        ReactRendererVersionMismatchWarnOnce = true;
+        recoverableViolation(
+          'Recoil: Unable to detect React dispatcher, assuming useSyncExternalStore is supported',
+          'recoil',
+        );
+      }
+      return true;
+    }
+    
+    const dispatcher =
+      ReactCurrentDispatcher?.current ?? (ReactCurrentOwner && ReactCurrentOwner.currentDispatcher);
+    const isUseSyncExternalStoreSupported =
+      dispatcher && dispatcher.useSyncExternalStore != null;
+    
+    if (
+      useSyncExternalStore &&
+      !isUseSyncExternalStoreSupported &&
+      !ReactRendererVersionMismatchWarnOnce
+    ) {
+      ReactRendererVersionMismatchWarnOnce = true;
+      recoverableViolation(
+        'A React renderer without React 18+ API support is being used with React 18+.',
+        'recoil',
+      );
+    }
+    
+    return isUseSyncExternalStoreSupported;
+  } catch (error) {
+    // Fallback for React 19 or other versions where internals changed
+    if (!ReactRendererVersionMismatchWarnOnce) {
+      ReactRendererVersionMismatchWarnOnce = true;
+      recoverableViolation(
+        `Recoil: Unable to detect React renderer version, assuming useSyncExternalStore is supported. Error: ${error.message}`,
+        'recoil',
+      );
+    }
+    return true;
   }
-  return isUseSyncExternalStoreSupported;
 }
 
 type ReactMode = 'TRANSITION_SUPPORT' | 'SYNC_EXTERNAL_STORE' | 'LEGACY';

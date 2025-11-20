@@ -16,7 +16,7 @@ import type {RecoilState, RecoilValue} from '../core/Recoil_RecoilValue';
 import type {Snapshot} from '../core/Recoil_Snapshot';
 import type {Store} from '../core/Recoil_State';
 
-const {atomicUpdater} = require('../core/Recoil_AtomicUpdates');
+const {atomicUpdater, atomicUpdaterDeferred} = require('../core/Recoil_AtomicUpdates');
 const {batchUpdates} = require('../core/Recoil_Batching');
 const {DEFAULT_VALUE} = require('../core/Recoil_Node');
 const {useStoreRef} = require('../core/Recoil_RecoilRoot');
@@ -39,6 +39,7 @@ export type RecoilCallbackInterface = $ReadOnly<{
   snapshot: Snapshot,
   gotoSnapshot: Snapshot => void,
   transact_UNSTABLE: ((TransactionInterface) => void) => void,
+  transactDeferred_UNSTABLE: ((TransactionInterface) => void, ?{waitForInteractions?: boolean}) => void,
 }>;
 
 class Sentinel {}
@@ -83,6 +84,9 @@ function recoilCallback<Args: $ReadOnlyArray<mixed>, Return, ExtraInterface>(
         refresh: <T>(node: RecoilValue<T>) => refreshRecoilValue(store, node),
         gotoSnapshot: snapshot => gotoSnapshot(store, snapshot),
         transact_UNSTABLE: transaction => atomicUpdater(store)(transaction),
+        // $FlowFixMe[missing-local-annot]
+        transactDeferred_UNSTABLE: (transaction, options) =>
+          atomicUpdaterDeferred(store, options)(transaction),
       },
       {
         snapshot: () => {

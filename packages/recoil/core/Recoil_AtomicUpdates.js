@@ -122,4 +122,56 @@ function atomicUpdater(store: Store): ((TransactionInterface) => void) => void {
   };
 }
 
-module.exports = {atomicUpdater};
+/**
+ * Deferred atomic updater that wraps updates in startTransition (if available)
+ * and optionally waits for interactions to complete (React Native).
+ *
+ * This is useful for background updates (like data hydration) that should not
+ * block user interactions.
+ */
+function atomicUpdaterDeferred(
+  store: Store,
+  options?: {waitForInteractions?: boolean},
+): ((TransactionInterface) => void) => void {
+  return fn => {
+    const executeUpdate = () => {
+      // Try to use React's startTransition if available
+      const React = require('react');
+      const startTransition = React.startTransition;
+
+      const updateFn = () => {
+        store.replaceState(treeState => {
+          const changeset = new TransactionInterfaceImpl(store, treeState);
+          fn(changeset);
+          return changeset.newTreeState_INTERNAL();
+        });
+      };
+
+      if (startTransition) {
+        startTransition(updateFn);
+      } else {
+        updateFn();
+      }
+    };
+
+    // If waitForInteractions is true and we're in React Native, wait for interactions
+    if (options?.waitForInteractions) {
+      try {
+        // Try to import InteractionManager (React Native only)
+        // eslint-disable-next-line no-undef
+        const InteractionManager = require('react-native').InteractionManager;
+        if (InteractionManager && InteractionManager.runAfterInteractions) {
+          InteractionManager.runAfterInteractions(executeUpdate);
+          return;
+        }
+      } catch (e) {
+        console.log('InteractionManager is not supported')
+        // Not in React Native environment, continue without InteractionManager
+      }
+    }
+
+    executeUpdate();
+  };
+}
+
+module.exports = {atomicUpdater, atomicUpdaterDeferred};
