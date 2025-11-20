@@ -85,6 +85,7 @@ const {
   waitForNone,
 } = require('./recoil_values/Recoil_WaitFor');
 const RecoilEnv = require('recoil-shared/util/Recoil_RecoilEnv');
+const RecoilPerformanceStats = require('recoil-shared/util/Recoil_PerformanceStats');
 
 module.exports = {
   // Types
@@ -94,6 +95,9 @@ module.exports = {
 
   // Global Recoil environment settings
   RecoilEnv,
+
+  // Performance monitoring (development only)
+  RecoilPerformanceStats,
 
   // Recoil Root
   RecoilRoot,

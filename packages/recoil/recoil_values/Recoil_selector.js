@@ -111,6 +111,7 @@ const concatIterables = require('recoil-shared/util/Recoil_concatIterables');
 const deepFreezeValue = require('recoil-shared/util/Recoil_deepFreezeValue');
 const equal = require('fast-deep-equal');
 const err = require('recoil-shared/util/Recoil_err');
+const {logSelectorRecalculation} = require('recoil-shared/util/Recoil_PerformanceStats');
 const filterIterable = require('recoil-shared/util/Recoil_filterIterable');
 const gkx = require('recoil-shared/util/Recoil_gkx');
 const invariant = require('recoil-shared/util/Recoil_invariant');
@@ -1068,14 +1069,18 @@ function selector<T>(
     // Check if the new value is deeply equal to the existing value
     // to prevent unnecessary re-renders
     const existingLoadable = state.atomValues.get(key);
-    if (
+    const isEqual =
       existingLoadable != null &&
       existingLoadable.state === loadable.state &&
       loadable.state === 'hasValue' &&
-      equal(existingLoadable.contents, loadable.contents)
-    ) {
+      equal(existingLoadable.contents, loadable.contents);
+    
+    if (isEqual) {
       // Value hasn't changed, don't update state.atomValues
       // but still update the cache with new dependency route
+      if (__DEV__) {
+        logSelectorRecalculation(key, true);
+      }
       try {
         cache.set(depValuesToDepRoute(depValues), loadable);
       } catch (error) {
@@ -1084,6 +1089,10 @@ function selector<T>(
         );
       }
       return;
+    }
+
+    if (__DEV__) {
+      logSelectorRecalculation(key, false);
     }
 
     state.atomValues.set(key, loadable);

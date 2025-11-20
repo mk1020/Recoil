@@ -100,6 +100,7 @@ const selector = require('./Recoil_selector');
 const deepFreezeValue = require('recoil-shared/util/Recoil_deepFreezeValue');
 const equal = require('fast-deep-equal');
 const err = require('recoil-shared/util/Recoil_err');
+const {logAtomUpdate} = require('recoil-shared/util/Recoil_PerformanceStats');
 const expectationViolation = require('recoil-shared/util/Recoil_expectationViolation');
 const isPromise = require('recoil-shared/util/Recoil_isPromise');
 const nullthrows = require('recoil-shared/util/Recoil_nullthrows');
@@ -558,11 +559,15 @@ function baseAtom<T>(options: BaseAtomOptions<T>): RecoilState<T> {
     // reset but have no stored value (validated or unvalidated) to reset from:
     if (state.atomValues.has(key)) {
       const existing = nullthrows(state.atomValues.get(key));
-      if (
-        existing.state === 'hasValue' &&
-        (newValue === existing.contents || equal(newValue, existing.contents))
-      ) {
+      const isEqual = newValue === existing.contents || equal(newValue, existing.contents);
+      if (existing.state === 'hasValue' && isEqual) {
+        if (__DEV__) {
+          logAtomUpdate(key, true);
+        }
         return new Map();
+      }
+      if (__DEV__ && existing.state === 'hasValue') {
+        logAtomUpdate(key, false);
       }
     } else if (
       !state.nonvalidatedAtoms.has(key) &&

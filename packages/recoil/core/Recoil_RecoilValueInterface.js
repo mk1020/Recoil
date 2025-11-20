@@ -41,6 +41,7 @@ const equal = require('fast-deep-equal');
 const err = require('recoil-shared/util/Recoil_err');
 const nullthrows = require('recoil-shared/util/Recoil_nullthrows');
 const recoverableViolation = require('recoil-shared/util/Recoil_recoverableViolation');
+const {logTransactionUpdate} = require('recoil-shared/util/Recoil_PerformanceStats');
 
 function getRecoilValueAsLoadable<T>(
   store: Store,
@@ -190,16 +191,24 @@ function writeLoadableToTreeState(
   } else {
     // Check if value is deeply equal to existing value to prevent unnecessary updates
     const existingLoadable = state.atomValues.get(key);
-    if (
+    const isEqual =
       existingLoadable != null &&
       existingLoadable.state === loadable.state &&
       loadable.state === 'hasValue' &&
-      equal(existingLoadable.contents, loadable.contents)
-    ) {
+      equal(existingLoadable.contents, loadable.contents);
+    
+    if (isEqual) {
       // Value hasn't changed, skip update but still mark as dirty for consistency
+      if (__DEV__) {
+        logTransactionUpdate(key, true);
+      }
       state.dirtyAtoms.add(key);
       state.nonvalidatedAtoms.delete(key);
       return;
+    }
+    
+    if (__DEV__) {
+      logTransactionUpdate(key, false);
     }
     
     state.atomValues.set(key, loadable);
