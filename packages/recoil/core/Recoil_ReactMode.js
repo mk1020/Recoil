@@ -44,13 +44,8 @@ function currentRendererSupportsUseSyncExternalStore(): boolean {
     if (!ReactCurrentDispatcher) {
       // If we can't find the dispatcher, assume useSyncExternalStore is supported
       // since React 19+ has it by default
-      if (!ReactRendererVersionMismatchWarnOnce) {
-        ReactRendererVersionMismatchWarnOnce = true;
-        recoverableViolation(
-          'Recoil: Unable to detect React dispatcher, assuming useSyncExternalStore is supported',
-          'recoil',
-        );
-      }
+      // This is common in React Native with new architecture (Fabric)
+      // and is not an error - just means we can't detect the renderer dynamically
       return true;
     }
     
@@ -74,13 +69,8 @@ function currentRendererSupportsUseSyncExternalStore(): boolean {
     return isUseSyncExternalStoreSupported;
   } catch (error) {
     // Fallback for React 19 or other versions where internals changed
-    if (!ReactRendererVersionMismatchWarnOnce) {
-      ReactRendererVersionMismatchWarnOnce = true;
-      recoverableViolation(
-        `Recoil: Unable to detect React renderer version, assuming useSyncExternalStore is supported. Error: ${error.message}`,
-        'recoil',
-      );
-    }
+    // This is expected in some environments (React Native with Fabric, etc.)
+    // and is not an error - we simply assume useSyncExternalStore is supported
     return true;
   }
 }
