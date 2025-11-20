@@ -37,6 +37,13 @@ function currentRendererSupportsUseSyncExternalStore(): boolean {
     // $FlowFixMe[incompatible-use]
     const internals = React.__SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED;
     
+    // Check if internals exist (may be undefined in some React Native builds)
+    if (!internals) {
+      // React Native with Fabric or other custom builds may not expose internals
+      // Assume useSyncExternalStore is supported (React 19+ always has it)
+      return true;
+    }
+    
     // React 19 changed the internal structure
     const ReactCurrentDispatcher = internals.ReactCurrentDispatcher || internals.ReactCurrentDispatcher$1;
     const ReactCurrentOwner = internals.ReactCurrentOwner || internals.ReactCurrentOwner$1;
