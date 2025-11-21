@@ -8201,6 +8201,8 @@ const {
 
 
 
+
+
 const unwrap = x => x instanceof WrappedValue$2 ? x.value : x;
 
 function baseAtom(options) {
@@ -8433,8 +8435,12 @@ function baseAtom(options) {
             // the handler if the subsequent batched call happens to set the
             // atom to the exact same value as the `setSelf()`.   But, in that
             // case, it was kind of a noop, so the semantics are debatable..
+            // Skip calling the handler if values are deeply equal
+            // This prevents unnecessary side effects when data hasn't actually changed
 
-            if (((_pendingSetSelf = pendingSetSelf) === null || _pendingSetSelf === void 0 ? void 0 : _pendingSetSelf.effect) !== effect || ((_pendingSetSelf2 = pendingSetSelf) === null || _pendingSetSelf2 === void 0 ? void 0 : _pendingSetSelf2.value) !== newValue) {
+            const valuesAreEqual = newValue === oldValue || oldValue !== DEFAULT_VALUE$7 && fastDeepEqual(newValue, oldValue);
+
+            if ((((_pendingSetSelf = pendingSetSelf) === null || _pendingSetSelf === void 0 ? void 0 : _pendingSetSelf.effect) !== effect || ((_pendingSetSelf2 = pendingSetSelf) === null || _pendingSetSelf2 === void 0 ? void 0 : _pendingSetSelf2.value) !== newValue) && !valuesAreEqual) {
               handler(newValue, oldValue, !currentTree.atomValues.has(key));
             } else if (((_pendingSetSelf3 = pendingSetSelf) === null || _pendingSetSelf3 === void 0 ? void 0 : _pendingSetSelf3.effect) === effect) {
               pendingSetSelf = null;

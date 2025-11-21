@@ -101,6 +101,7 @@ const deepFreezeValue = require('recoil-shared/util/Recoil_deepFreezeValue');
 const equal = require('fast-deep-equal');
 const err = require('recoil-shared/util/Recoil_err');
 const {logAtomUpdate} = require('recoil-shared/util/Recoil_PerformanceStats');
+const shallowArrayEqual = require('recoil-shared/util/Recoil_shallowArrayEqual');
 const expectationViolation = require('recoil-shared/util/Recoil_expectationViolation');
 const isPromise = require('recoil-shared/util/Recoil_isPromise');
 const nullthrows = require('recoil-shared/util/Recoil_nullthrows');
@@ -436,9 +437,17 @@ function baseAtom<T>(options: BaseAtomOptions<T>): RecoilState<T> {
               // the handler if the subsequent batched call happens to set the
               // atom to the exact same value as the `setSelf()`.   But, in that
               // case, it was kind of a noop, so the semantics are debatable..
+              
+              // Skip calling the handler if values are deeply equal
+              // This prevents unnecessary side effects when data hasn't actually changed
+              const valuesAreEqual = 
+                newValue === oldValue || 
+                (oldValue !== DEFAULT_VALUE && equal(newValue, oldValue));
+              
               if (
-                pendingSetSelf?.effect !== effect ||
-                pendingSetSelf?.value !== newValue
+                (pendingSetSelf?.effect !== effect ||
+                pendingSetSelf?.value !== newValue) &&
+                !valuesAreEqual
               ) {
                 handler(newValue, oldValue, !currentTree.atomValues.has(key));
               } else if (pendingSetSelf?.effect === effect) {
