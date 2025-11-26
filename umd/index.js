@@ -7191,12 +7191,6 @@ This is currently a DEV-only warning but will become a thrown exception in the n
 
 
 
-  const {
-    logSelectorRecalculation: logSelectorRecalculation$1
-  } = Recoil_PerformanceStats;
-
-
-
 
 
 
@@ -7763,18 +7757,10 @@ This is currently a DEV-only warning but will become a thrown exception in the n
       if (cachedLoadable) {
         var _getExecutionInfo;
 
-        // Check if the cached value is deeply equal to the existing value
-        // to prevent unnecessary re-renders even when hitting cache
-        const existingLoadable = state.atomValues.get(key);
-        const shouldUpdate = existingLoadable == null || existingLoadable.state !== cachedLoadable.state || cachedLoadable.state !== 'hasValue' || !fastDeepEqual(existingLoadable.contents, cachedLoadable.contents);
-
-        if (shouldUpdate) {
-          // Cache the results in the state to allow for cheaper lookup than
-          // iterating the tree cache of dependencies.
-          state.atomValues.set(key, cachedLoadable);
-        } else {
-          logSelectorRecalculation$1(key, true);
-        }
+        // Cache the results in the state to allow for cheaper lookup than
+        // iterating the tree cache of dependencies.
+        // Deep equality check is now handled by loadable.is() in hooks
+        state.atomValues.set(key, cachedLoadable);
         /**
          * Ensure store contains correct dependencies if we hit the cache so that
          * the store deps and cache are in sync for a given state. This is important
@@ -7783,7 +7769,6 @@ This is currently a DEV-only warning but will become a thrown exception in the n
          * a change in deps in the store if the store deps for this state are empty
          * or stale.
          */
-
 
         updateDeps(store, state, depsAfterCacheLookup, (_getExecutionInfo = getExecutionInfo(store)) === null || _getExecutionInfo === void 0 ? void 0 : _getExecutionInfo.executionID);
       }
@@ -7953,41 +7938,12 @@ This is currently a DEV-only warning but will become a thrown exception in the n
     }
 
     function setCache(state, loadable, depValues) {
-      var _state$atomValues$get;
-
       {
         if (loadable.state !== 'loading' && Boolean(options.dangerouslyAllowMutability) === false) {
           Recoil_deepFreezeValue(loadable.contents);
         }
-      } // Check if the new value is deeply equal to the existing value
-      // to prevent unnecessary re-renders
-      // Note: existingLoadable may be null if invalidateSelector was called,
-      // so we check lastComputedValue as fallback
-
-
-      const existingLoadable = (_state$atomValues$get = state.atomValues.get(key)) !== null && _state$atomValues$get !== void 0 ? _state$atomValues$get : lastComputedValue;
-      const isEqual = existingLoadable != null && existingLoadable.state === loadable.state && loadable.state === 'hasValue' && fastDeepEqual(existingLoadable.contents, loadable.contents);
-
-      if (isEqual) {
-        // Value hasn't changed, don't update state.atomValues
-        // Keep the existing loadable to maintain referential equality
-        // but still update the cache with new dependency route
-        {
-          logSelectorRecalculation$1(key, true);
-        }
-
-        try {
-          cache.set(depValuesToDepRoute(depValues), existingLoadable);
-        } catch (error) {
-          throw Recoil_err(`Problem with setting cache for selector "${key}": ${error.message}`);
-        }
-
-        return;
-      }
-
-      {
-        logSelectorRecalculation$1(key, false);
-      } // Value changed or this is first calculation, update state
+      } // Always update state.atomValues and cache
+      // Deep equality check is now handled by loadable.is() in hooks
 
 
       state.atomValues.set(key, loadable);
@@ -8036,14 +7992,9 @@ This is currently a DEV-only warning but will become a thrown exception in the n
       }
 
       return detectCircularDependencies(() => getSelectorLoadableAndUpdateDeps(store, state));
-    } // Store the last computed value for deep equality comparison
-
-
-    let lastComputedValue = undefined;
+    }
 
     function invalidateSelector(state) {
-      // Save the current value before invalidating for deep equality check
-      lastComputedValue = state.atomValues.get(key);
       state.atomValues.delete(key);
     }
 
