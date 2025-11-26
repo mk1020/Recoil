@@ -273,6 +273,10 @@ function selector<T>(
   const executionInfoMap: Map<Store, ExecutionInfo<T>> = new Map();
   let liveStoresCount = 0;
 
+  // Store the last valid loadable to compare against when dependencies change
+  // This enables deep equality comparison across state versions
+  let lastValidLoadable: ?Loadable<T> = null;
+
   function selectorIsLive() {
     return !gkx('recoil_memory_managament_2020') || liveStoresCount > 0;
   }
@@ -811,9 +815,10 @@ function selector<T>(
     // If it's here, then the deps in the store should already be valid.
     let cachedLoadable: ?Loadable<T> = state.atomValues.get(key);
     if (cachedLoadable != null) {
-      // Value is in state cache, but we still need to check if dependencies changed
-      // If dependencies changed but result is the same, we should not notify components
-      // This check will be performed after checking the tree cache below
+      // Update lastValidLoadable for future deep equality comparisons
+      if (cachedLoadable.state === 'hasValue') {
+        lastValidLoadable = cachedLoadable;
+      }
       return cachedLoadable;
     }
 
@@ -846,8 +851,12 @@ function selector<T>(
     if (cachedLoadable) {
       // Cache the results in the state to allow for cheaper lookup than
       // iterating the tree cache of dependencies.
-      // Deep equality check is now handled by loadable.is() in hooks
       state.atomValues.set(key, cachedLoadable);
+
+      // Update lastValidLoadable for future deep equality comparisons
+      if (cachedLoadable.state === 'hasValue') {
+        lastValidLoadable = cachedLoadable;
+      }
 
       /**
        * Ensure store contains correct dependencies if we hit the cache so that
@@ -933,12 +942,13 @@ function selector<T>(
     if (loadable.state === 'loading') {
       setExecutionInfo(store, newExecutionID, loadable, newDepValues, state);
       markStoreWaitingForResolvedAsync(store, newExecutionID);
+      return loadable;
     } else {
       clearExecutionInfo(store);
-      setCache(state, loadable, newDepValues);
+      // Use the loadable returned by setCache - it may be the previous loadable
+      // if the value is deeply equal, preserving referential equality
+      return setCache(state, loadable, newDepValues);
     }
-
-    return loadable;
   }
 
   /**
