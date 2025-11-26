@@ -15,6 +15,7 @@
  */
 'use strict';
 
+const equal = require('fast-deep-equal');
 const err = require('recoil-shared/util/Recoil_err');
 const isPromise = require('recoil-shared/util/Recoil_isPromise');
 const nullthrows = require('recoil-shared/util/Recoil_nullthrows');
@@ -51,7 +52,10 @@ class BaseLoadable<T> {
 
   is(other: Loadable<mixed>): boolean {
     // $FlowFixMe[prop-missing]
-    return other.state === this.state && other.contents === this.contents;
+    return (
+      other.state === this.state &&
+      (other.contents === this.contents || equal(other.contents, this.contents))
+    );
   }
 
   map<S>(_map: T => Promise<S> | Loadable<S> | S): Loadable<S> {
