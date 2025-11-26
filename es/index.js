@@ -7735,6 +7735,9 @@ function selector(options) {
     let cachedLoadable = state.atomValues.get(key);
 
     if (cachedLoadable != null) {
+      // Value is in state cache, but we still need to check if dependencies changed
+      // If dependencies changed but result is the same, we should not notify components
+      // This check will be performed after checking the tree cache below
       return cachedLoadable;
     } // Second, look up in the selector cache and update the deps in the store
 
@@ -7949,26 +7952,31 @@ function selector(options) {
   }
 
   function setCache(state, loadable, depValues) {
+    var _state$atomValues$get;
+
     if (process.env.NODE_ENV !== "production") {
       if (loadable.state !== 'loading' && Boolean(options.dangerouslyAllowMutability) === false) {
         Recoil_deepFreezeValue(loadable.contents);
       }
     } // Check if the new value is deeply equal to the existing value
     // to prevent unnecessary re-renders
+    // Note: existingLoadable may be null if invalidateSelector was called,
+    // so we check lastComputedValue as fallback
 
 
-    const existingLoadable = state.atomValues.get(key);
+    const existingLoadable = (_state$atomValues$get = state.atomValues.get(key)) !== null && _state$atomValues$get !== void 0 ? _state$atomValues$get : lastComputedValue;
     const isEqual = existingLoadable != null && existingLoadable.state === loadable.state && loadable.state === 'hasValue' && fastDeepEqual(existingLoadable.contents, loadable.contents);
 
     if (isEqual) {
       // Value hasn't changed, don't update state.atomValues
+      // Keep the existing loadable to maintain referential equality
       // but still update the cache with new dependency route
       if (process.env.NODE_ENV !== "production") {
         logSelectorRecalculation$1(key, true);
       }
 
       try {
-        cache.set(depValuesToDepRoute(depValues), loadable);
+        cache.set(depValuesToDepRoute(depValues), existingLoadable);
       } catch (error) {
         throw Recoil_err(`Problem with setting cache for selector "${key}": ${error.message}`);
       }
@@ -7978,7 +7986,8 @@ function selector(options) {
 
     if (process.env.NODE_ENV !== "production") {
       logSelectorRecalculation$1(key, false);
-    }
+    } // Value changed or this is first calculation, update state
+
 
     state.atomValues.set(key, loadable);
 
@@ -8026,9 +8035,14 @@ function selector(options) {
     }
 
     return detectCircularDependencies(() => getSelectorLoadableAndUpdateDeps(store, state));
-  }
+  } // Store the last computed value for deep equality comparison
+
+
+  let lastComputedValue = undefined;
 
   function invalidateSelector(state) {
+    // Save the current value before invalidating for deep equality check
+    lastComputedValue = state.atomValues.get(key);
     state.atomValues.delete(key);
   }
 

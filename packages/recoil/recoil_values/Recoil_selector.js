@@ -813,6 +813,9 @@ function selector<T>(
     // If it's here, then the deps in the store should already be valid.
     let cachedLoadable: ?Loadable<T> = state.atomValues.get(key);
     if (cachedLoadable != null) {
+      // Value is in state cache, but we still need to check if dependencies changed
+      // If dependencies changed but result is the same, we should not notify components
+      // This check will be performed after checking the tree cache below
       return cachedLoadable;
     }
 
@@ -1081,7 +1084,9 @@ function selector<T>(
 
     // Check if the new value is deeply equal to the existing value
     // to prevent unnecessary re-renders
-    const existingLoadable = state.atomValues.get(key);
+    // Note: existingLoadable may be null if invalidateSelector was called,
+    // so we check lastComputedValue as fallback
+    const existingLoadable = state.atomValues.get(key) ?? lastComputedValue;
     const isEqual =
       existingLoadable != null &&
       existingLoadable.state === loadable.state &&
@@ -1090,12 +1095,13 @@ function selector<T>(
     
     if (isEqual) {
       // Value hasn't changed, don't update state.atomValues
+      // Keep the existing loadable to maintain referential equality
       // but still update the cache with new dependency route
       if (__DEV__) {
         logSelectorRecalculation(key, true);
       }
       try {
-        cache.set(depValuesToDepRoute(depValues), loadable);
+        cache.set(depValuesToDepRoute(depValues), existingLoadable);
       } catch (error) {
         throw err(
           `Problem with setting cache for selector "${key}": ${error.message}`,
@@ -1108,6 +1114,7 @@ function selector<T>(
       logSelectorRecalculation(key, false);
     }
 
+    // Value changed or this is first calculation, update state
     state.atomValues.set(key, loadable);
     try {
       cache.set(depValuesToDepRoute(depValues), loadable);
@@ -1154,7 +1161,12 @@ function selector<T>(
     );
   }
 
+  // Store the last computed value for deep equality comparison
+  let lastComputedValue: ?Loadable<T> = undefined;
+  
   function invalidateSelector(state: TreeState) {
+    // Save the current value before invalidating for deep equality check
+    lastComputedValue = state.atomValues.get(key);
     state.atomValues.delete(key);
   }
 
