@@ -2769,7 +2769,9 @@
     selectorRecalculationsAttempted: 0,
     selectorRecalculationsPrevented: 0,
     transactionUpdatesAttempted: 0,
-    transactionUpdatesPrevented: 0
+    transactionUpdatesPrevented: 0,
+    componentRerendersPrevented: 0,
+    componentRerendersTriggered: 0
   };
   let loggingEnabled = false;
 
@@ -2829,6 +2831,22 @@
     }
   }
 
+  function logComponentRerender(key, prevented) {
+    if (prevented) {
+      stats.componentRerendersPrevented++;
+
+      if (loggingEnabled) {
+        console.log(`[Recoil] ⏭️  Component re-render PREVENTED: "${key}" (deep equal via Loadable.is())`);
+      }
+    } else {
+      stats.componentRerendersTriggered++;
+
+      if (loggingEnabled) {
+        console.log(`[Recoil] 🔄 Component re-render triggered: "${key}" (data changed)`);
+      }
+    }
+  }
+
   function getStats() {
     return { ...stats
     };
@@ -2841,23 +2859,29 @@
     stats.selectorRecalculationsPrevented = 0;
     stats.transactionUpdatesAttempted = 0;
     stats.transactionUpdatesPrevented = 0;
+    stats.componentRerendersPrevented = 0;
+    stats.componentRerendersTriggered = 0;
   }
 
   function printStats() {
-    const total = stats.atomUpdatesPrevented + stats.selectorRecalculationsPrevented + stats.transactionUpdatesPrevented;
+    const totalPrevented = stats.atomUpdatesPrevented + stats.selectorRecalculationsPrevented + stats.transactionUpdatesPrevented + stats.componentRerendersPrevented;
     console.log('\n========================================');
     console.log('📊 RECOIL PERFORMANCE STATISTICS');
     console.log('========================================');
     console.log(`\n🔹 Atoms:`);
     console.log(`   Attempted: ${stats.atomUpdatesAttempted}`);
     console.log(`   Prevented: ${stats.atomUpdatesPrevented} (${getPercentage(stats.atomUpdatesPrevented, stats.atomUpdatesAttempted)}%)`);
-    console.log(`\n🔹 Selectors:`);
+    console.log(`\n🔹 Selectors (setCache):`);
     console.log(`   Attempted: ${stats.selectorRecalculationsAttempted}`);
     console.log(`   Prevented: ${stats.selectorRecalculationsPrevented} (${getPercentage(stats.selectorRecalculationsPrevented, stats.selectorRecalculationsAttempted)}%)`);
     console.log(`\n🔹 Transactions:`);
     console.log(`   Attempted: ${stats.transactionUpdatesAttempted}`);
     console.log(`   Prevented: ${stats.transactionUpdatesPrevented} (${getPercentage(stats.transactionUpdatesPrevented, stats.transactionUpdatesAttempted)}%)`);
-    console.log(`\n🎯 Total prevented: ${total}`);
+    const componentTotal = stats.componentRerendersPrevented + stats.componentRerendersTriggered;
+    console.log(`\n🔹 Component Re-renders (hooks):`);
+    console.log(`   Triggered: ${stats.componentRerendersTriggered}`);
+    console.log(`   Prevented: ${stats.componentRerendersPrevented} (${getPercentage(stats.componentRerendersPrevented, componentTotal)}%)`);
+    console.log(`\n🎯 Total operations prevented: ${totalPrevented}`);
     console.log('========================================\n');
   }
 
@@ -2872,6 +2896,7 @@
     logAtomUpdate,
     logSelectorRecalculation,
     logTransactionUpdate,
+    logComponentRerender,
     getStats,
     resetStats,
     printStats
@@ -5078,6 +5103,10 @@ This is currently a DEV-only warning but will become a thrown exception in the n
 
 
 
+  const {
+    logComponentRerender: logComponentRerender$1
+  } = Recoil_PerformanceStats;
+
 
 
   function handleLoadable(loadable, recoilValue, storeRef) {
@@ -5401,8 +5430,16 @@ This is currently a DEV-only warning but will become a thrown exception in the n
         const newLoadable = getLoadable();
 
         if (!((_prevLoadableRef$curr = prevLoadableRef.current) !== null && _prevLoadableRef$curr !== void 0 && _prevLoadableRef$curr.is(newLoadable))) {
-          // $FlowFixMe[incompatible-call]
+          {
+            logComponentRerender$1(recoilValue.key, false);
+          } // $FlowFixMe[incompatible-call]
+
+
           forceUpdate(newLoadable);
+        } else {
+          {
+            logComponentRerender$1(recoilValue.key, true);
+          }
         }
 
         prevLoadableRef.current = newLoadable;
@@ -5440,8 +5477,16 @@ This is currently a DEV-only warning but will become a thrown exception in the n
         const newLoadable = getLoadable();
 
         if (!((_prevLoadableRef$curr2 = prevLoadableRef.current) !== null && _prevLoadableRef$curr2 !== void 0 && _prevLoadableRef$curr2.is(newLoadable))) {
-          // $FlowFixMe[incompatible-call]
+          {
+            logComponentRerender$1(recoilValue.key, false);
+          } // $FlowFixMe[incompatible-call]
+
+
           forceUpdate(newLoadable);
+        } else {
+          {
+            logComponentRerender$1(recoilValue.key, true);
+          }
         }
 
         prevLoadableRef.current = newLoadable;
