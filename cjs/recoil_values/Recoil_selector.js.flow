@@ -109,7 +109,9 @@ const {retainedByOptionWithDefault} = require('../core/Recoil_Retention');
 const {recoilCallback} = require('../hooks/Recoil_useRecoilCallback');
 const concatIterables = require('recoil-shared/util/Recoil_concatIterables');
 const deepFreezeValue = require('recoil-shared/util/Recoil_deepFreezeValue');
+const equal = require('fast-deep-equal');
 const err = require('recoil-shared/util/Recoil_err');
+const {logSelectorRecalculation} = require('recoil-shared/util/Recoil_PerformanceStats');
 const filterIterable = require('recoil-shared/util/Recoil_filterIterable');
 const gkx = require('recoil-shared/util/Recoil_gkx');
 const invariant = require('recoil-shared/util/Recoil_invariant');
@@ -811,9 +813,6 @@ function selector<T>(
     // If it's here, then the deps in the store should already be valid.
     let cachedLoadable: ?Loadable<T> = state.atomValues.get(key);
     if (cachedLoadable != null) {
-      // Value is in state cache, but we still need to check if dependencies changed
-      // If dependencies changed but result is the same, we should not notify components
-      // This check will be performed after checking the tree cache below
       return cachedLoadable;
     }
 
@@ -846,7 +845,6 @@ function selector<T>(
     if (cachedLoadable) {
       // Cache the results in the state to allow for cheaper lookup than
       // iterating the tree cache of dependencies.
-      // Deep equality check is now handled by loadable.is() in hooks
       state.atomValues.set(key, cachedLoadable);
 
       /**
@@ -1068,8 +1066,35 @@ function selector<T>(
       }
     }
 
-    // Always update state.atomValues and cache
-    // Deep equality check is now handled by loadable.is() in hooks
+    // Check if the new value is deeply equal to the existing value
+    // to prevent unnecessary re-renders
+    const existingLoadable = state.atomValues.get(key);
+    const isEqual =
+      existingLoadable != null &&
+      existingLoadable.state === loadable.state &&
+      loadable.state === 'hasValue' &&
+      (existingLoadable.contents === loadable.contents ||  equal(existingLoadable.contents, loadable.contents));
+
+    if (isEqual) {
+      // Value hasn't changed, don't update state.atomValues
+      // but still update the cache with the EXISTING loadable to maintain reference equality
+      if (__DEV__) {
+        logSelectorRecalculation(key, true);
+      }
+      try {
+        cache.set(depValuesToDepRoute(depValues), existingLoadable);
+      } catch (error) {
+        throw err(
+          `Problem with setting cache for selector "${key}": ${error.message}`,
+        );
+      }
+      return;
+    }
+
+    if (__DEV__) {
+      logSelectorRecalculation(key, false);
+    }
+
     state.atomValues.set(key, loadable);
     try {
       cache.set(depValuesToDepRoute(depValues), loadable);

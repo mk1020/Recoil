@@ -3030,9 +3030,9 @@ function writeLoadableToTreeState(state, key, loadable) {
   if (loadable.state === 'hasValue' && loadable.contents instanceof DefaultValue$1) {
     state.atomValues.delete(key);
   } else {
-    // Check if value is deeply equal to existing value to prevent unnecessary updates
+    // Check if value is equal (by reference or deep) to existing value to prevent unnecessary updates
     const existingLoadable = state.atomValues.get(key);
-    const isEqual = existingLoadable != null && existingLoadable.state === loadable.state && loadable.state === 'hasValue' && fastDeepEqual(existingLoadable.contents, loadable.contents);
+    const isEqual = existingLoadable != null && existingLoadable.state === loadable.state && loadable.state === 'hasValue' && (existingLoadable.contents === loadable.contents || fastDeepEqual(existingLoadable.contents, loadable.contents));
 
     if (isEqual) {
       // Value hasn't changed, skip update but still mark as dirty for consistency
@@ -7196,6 +7196,12 @@ const {
 
 
 
+const {
+  logSelectorRecalculation: logSelectorRecalculation$1
+} = Recoil_PerformanceStats;
+
+
+
 
 
 
@@ -7735,9 +7741,6 @@ function selector(options) {
     let cachedLoadable = state.atomValues.get(key);
 
     if (cachedLoadable != null) {
-      // Value is in state cache, but we still need to check if dependencies changed
-      // If dependencies changed but result is the same, we should not notify components
-      // This check will be performed after checking the tree cache below
       return cachedLoadable;
     } // Second, look up in the selector cache and update the deps in the store
 
@@ -7764,7 +7767,6 @@ function selector(options) {
 
       // Cache the results in the state to allow for cheaper lookup than
       // iterating the tree cache of dependencies.
-      // Deep equality check is now handled by loadable.is() in hooks
       state.atomValues.set(key, cachedLoadable);
       /**
        * Ensure store contains correct dependencies if we hit the cache so that
@@ -7947,9 +7949,32 @@ function selector(options) {
       if (loadable.state !== 'loading' && Boolean(options.dangerouslyAllowMutability) === false) {
         Recoil_deepFreezeValue(loadable.contents);
       }
-    } // Always update state.atomValues and cache
-    // Deep equality check is now handled by loadable.is() in hooks
+    } // Check if the new value is deeply equal to the existing value
+    // to prevent unnecessary re-renders
 
+
+    const existingLoadable = state.atomValues.get(key);
+    const isEqual = existingLoadable != null && existingLoadable.state === loadable.state && loadable.state === 'hasValue' && (existingLoadable.contents === loadable.contents || fastDeepEqual(existingLoadable.contents, loadable.contents));
+
+    if (isEqual) {
+      // Value hasn't changed, don't update state.atomValues
+      // but still update the cache with the EXISTING loadable to maintain reference equality
+      if (process.env.NODE_ENV !== "production") {
+        logSelectorRecalculation$1(key, true);
+      }
+
+      try {
+        cache.set(depValuesToDepRoute(depValues), existingLoadable);
+      } catch (error) {
+        throw Recoil_err(`Problem with setting cache for selector "${key}": ${error.message}`);
+      }
+
+      return;
+    }
+
+    if (process.env.NODE_ENV !== "production") {
+      logSelectorRecalculation$1(key, false);
+    }
 
     state.atomValues.set(key, loadable);
 
@@ -8416,12 +8441,8 @@ function baseAtom(options) {
             // the handler if the subsequent batched call happens to set the
             // atom to the exact same value as the `setSelf()`.   But, in that
             // case, it was kind of a noop, so the semantics are debatable..
-            // Skip calling the handler if values are deeply equal
-            // This prevents unnecessary side effects when data hasn't actually changed
 
-            const valuesAreEqual = newValue === oldValue || oldValue !== DEFAULT_VALUE$7 && fastDeepEqual(newValue, oldValue);
-
-            if ((((_pendingSetSelf = pendingSetSelf) === null || _pendingSetSelf === void 0 ? void 0 : _pendingSetSelf.effect) !== effect || ((_pendingSetSelf2 = pendingSetSelf) === null || _pendingSetSelf2 === void 0 ? void 0 : _pendingSetSelf2.value) !== newValue) && !valuesAreEqual) {
+            if (((_pendingSetSelf = pendingSetSelf) === null || _pendingSetSelf === void 0 ? void 0 : _pendingSetSelf.effect) !== effect || ((_pendingSetSelf2 = pendingSetSelf) === null || _pendingSetSelf2 === void 0 ? void 0 : _pendingSetSelf2.value) !== newValue) {
               handler(newValue, oldValue, !currentTree.atomValues.has(key));
             } else if (((_pendingSetSelf3 = pendingSetSelf) === null || _pendingSetSelf3 === void 0 ? void 0 : _pendingSetSelf3.effect) === effect) {
               pendingSetSelf = null;
