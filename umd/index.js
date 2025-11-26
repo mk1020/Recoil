@@ -2788,7 +2788,11 @@
       stats.atomUpdatesPrevented++;
 
       if (loggingEnabled) {
-        console.log(`[Recoil] ⏭️  Atom update prevented: ${key} (value unchanged)`);
+        console.log(`[Recoil] ⏭️  Atom update PREVENTED: "${key}" (deep equal, same data)`);
+      }
+    } else {
+      if (loggingEnabled) {
+        console.log(`[Recoil] 🔄 Atom updated: "${key}" (data changed)`);
       }
     }
   }
@@ -2800,7 +2804,11 @@
       stats.selectorRecalculationsPrevented++;
 
       if (loggingEnabled) {
-        console.log(`[Recoil] ⏭️  Selector recalculation prevented: ${key} (result unchanged)`);
+        console.log(`[Recoil] ⏭️  Selector re-render PREVENTED: "${key}" (deep equal, same data)`);
+      }
+    } else {
+      if (loggingEnabled) {
+        console.log(`[Recoil] 🔄 Selector updated: "${key}" (data changed)`);
       }
     }
   }
@@ -2812,7 +2820,11 @@
       stats.transactionUpdatesPrevented++;
 
       if (loggingEnabled) {
-        console.log(`[Recoil] ⏭️  Transaction update prevented: ${key} (value unchanged)`);
+        console.log(`[Recoil] ⏭️  Transaction PREVENTED: "${key}" (deep equal, same data)`);
+      }
+    } else {
+      if (loggingEnabled) {
+        console.log(`[Recoil] 🔄 Transaction applied: "${key}" (data changed)`);
       }
     }
   }
