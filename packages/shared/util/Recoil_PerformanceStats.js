@@ -46,7 +46,11 @@ function logAtomUpdate(key: string, prevented: boolean): void {
   if (prevented) {
     stats.atomUpdatesPrevented++;
     if (loggingEnabled) {
-      console.log(`[Recoil] ⏭️  Atom update prevented: ${key} (value unchanged)`);
+      console.log(`[Recoil] ⏭️  Atom update PREVENTED: "${key}" (deep equal, same data)`);
+    }
+  } else {
+    if (loggingEnabled) {
+      console.log(`[Recoil] 🔄 Atom updated: "${key}" (data changed)`);
     }
   }
 }
@@ -56,7 +60,11 @@ function logSelectorRecalculation(key: string, prevented: boolean): void {
   if (prevented) {
     stats.selectorRecalculationsPrevented++;
     if (loggingEnabled) {
-      console.log(`[Recoil] ⏭️  Selector recalculation prevented: ${key} (result unchanged)`);
+      console.log(`[Recoil] ⏭️  Selector re-render PREVENTED: "${key}" (deep equal, same data)`);
+    }
+  } else {
+    if (loggingEnabled) {
+      console.log(`[Recoil] 🔄 Selector updated: "${key}" (data changed)`);
     }
   }
 }
@@ -66,7 +74,11 @@ function logTransactionUpdate(key: string, prevented: boolean): void {
   if (prevented) {
     stats.transactionUpdatesPrevented++;
     if (loggingEnabled) {
-      console.log(`[Recoil] ⏭️  Transaction update prevented: ${key} (value unchanged)`);
+      console.log(`[Recoil] ⏭️  Transaction PREVENTED: "${key}" (deep equal, same data)`);
+    }
+  } else {
+    if (loggingEnabled) {
+      console.log(`[Recoil] 🔄 Transaction applied: "${key}" (data changed)`);
     }
   }
 }
