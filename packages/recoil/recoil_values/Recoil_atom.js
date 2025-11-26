@@ -437,17 +437,9 @@ function baseAtom<T>(options: BaseAtomOptions<T>): RecoilState<T> {
               // the handler if the subsequent batched call happens to set the
               // atom to the exact same value as the `setSelf()`.   But, in that
               // case, it was kind of a noop, so the semantics are debatable..
-              
-              // Skip calling the handler if values are deeply equal
-              // This prevents unnecessary side effects when data hasn't actually changed
-              const valuesAreEqual = 
-                newValue === oldValue || 
-                (oldValue !== DEFAULT_VALUE && equal(newValue, oldValue));
-              
               if (
-                (pendingSetSelf?.effect !== effect ||
-                pendingSetSelf?.value !== newValue) &&
-                !valuesAreEqual
+                pendingSetSelf?.effect !== effect ||
+                pendingSetSelf?.value !== newValue
               ) {
                 handler(newValue, oldValue, !currentTree.atomValues.has(key));
               } else if (pendingSetSelf?.effect === effect) {

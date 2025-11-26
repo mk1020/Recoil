@@ -189,13 +189,14 @@ function writeLoadableToTreeState(
   ) {
     state.atomValues.delete(key);
   } else {
-    // Check if value is deeply equal to existing value to prevent unnecessary updates
+    // Check if value is equal (by reference or deep) to existing value to prevent unnecessary updates
     const existingLoadable = state.atomValues.get(key);
     const isEqual =
       existingLoadable != null &&
       existingLoadable.state === loadable.state &&
       loadable.state === 'hasValue' &&
-      equal(existingLoadable.contents, loadable.contents);
+      (existingLoadable.contents === loadable.contents ||
+        equal(existingLoadable.contents, loadable.contents));
     
     if (isEqual) {
       // Value hasn't changed, skip update but still mark as dirty for consistency

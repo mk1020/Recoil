@@ -109,7 +109,9 @@ const {retainedByOptionWithDefault} = require('../core/Recoil_Retention');
 const {recoilCallback} = require('../hooks/Recoil_useRecoilCallback');
 const concatIterables = require('recoil-shared/util/Recoil_concatIterables');
 const deepFreezeValue = require('recoil-shared/util/Recoil_deepFreezeValue');
+const equal = require('fast-deep-equal');
 const err = require('recoil-shared/util/Recoil_err');
+const {logSelectorRecalculation} = require('recoil-shared/util/Recoil_PerformanceStats');
 const filterIterable = require('recoil-shared/util/Recoil_filterIterable');
 const gkx = require('recoil-shared/util/Recoil_gkx');
 const invariant = require('recoil-shared/util/Recoil_invariant');
@@ -272,10 +274,6 @@ function selector<T>(
 
   const executionInfoMap: Map<Store, ExecutionInfo<T>> = new Map();
   let liveStoresCount = 0;
-
-  // Store the last valid loadable to compare against when dependencies change
-  // This enables deep equality comparison across state versions
-  let lastValidLoadable: ?Loadable<T> = null;
 
   function selectorIsLive() {
     return !gkx('recoil_memory_managament_2020') || liveStoresCount > 0;
@@ -815,10 +813,6 @@ function selector<T>(
     // If it's here, then the deps in the store should already be valid.
     let cachedLoadable: ?Loadable<T> = state.atomValues.get(key);
     if (cachedLoadable != null) {
-      // Update lastValidLoadable for future deep equality comparisons
-      if (cachedLoadable.state === 'hasValue') {
-        lastValidLoadable = cachedLoadable;
-      }
       return cachedLoadable;
     }
 
@@ -852,11 +846,6 @@ function selector<T>(
       // Cache the results in the state to allow for cheaper lookup than
       // iterating the tree cache of dependencies.
       state.atomValues.set(key, cachedLoadable);
-
-      // Update lastValidLoadable for future deep equality comparisons
-      if (cachedLoadable.state === 'hasValue') {
-        lastValidLoadable = cachedLoadable;
-      }
 
       /**
        * Ensure store contains correct dependencies if we hit the cache so that
@@ -942,13 +931,12 @@ function selector<T>(
     if (loadable.state === 'loading') {
       setExecutionInfo(store, newExecutionID, loadable, newDepValues, state);
       markStoreWaitingForResolvedAsync(store, newExecutionID);
-      return loadable;
     } else {
       clearExecutionInfo(store);
-      // Use the loadable returned by setCache - it may be the previous loadable
-      // if the value is deeply equal, preserving referential equality
-      return setCache(state, loadable, newDepValues);
+      setCache(state, loadable, newDepValues);
     }
+
+    return loadable;
   }
 
   /**
@@ -1078,8 +1066,35 @@ function selector<T>(
       }
     }
 
-    // Always update state.atomValues and cache
-    // Deep equality check is now handled by loadable.is() in hooks
+    // Check if the new value is deeply equal to the existing value
+    // to prevent unnecessary re-renders
+    const existingLoadable = state.atomValues.get(key);
+    const isEqual =
+      existingLoadable != null &&
+      existingLoadable.state === loadable.state &&
+      loadable.state === 'hasValue' &&
+      (existingLoadable.contents === loadable.contents ||  equal(existingLoadable.contents, loadable.contents));
+
+    if (isEqual) {
+      // Value hasn't changed, don't update state.atomValues
+      // but still update the cache with the EXISTING loadable to maintain reference equality
+      if (__DEV__) {
+        logSelectorRecalculation(key, true);
+      }
+      try {
+        cache.set(depValuesToDepRoute(depValues), existingLoadable);
+      } catch (error) {
+        throw err(
+          `Problem with setting cache for selector "${key}": ${error.message}`,
+        );
+      }
+      return;
+    }
+
+    if (__DEV__) {
+      logSelectorRecalculation(key, false);
+    }
+
     state.atomValues.set(key, loadable);
     try {
       cache.set(depValuesToDepRoute(depValues), loadable);
