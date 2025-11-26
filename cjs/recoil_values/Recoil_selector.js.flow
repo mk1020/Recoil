@@ -843,9 +843,22 @@ function selector<T>(
     }
 
     if (cachedLoadable) {
-      // Cache the results in the state to allow for cheaper lookup than
-      // iterating the tree cache of dependencies.
-      state.atomValues.set(key, cachedLoadable);
+      // Check if the cached value is deeply equal to the existing value
+      // to prevent unnecessary re-renders even when hitting cache
+      const existingLoadable = state.atomValues.get(key);
+      const shouldUpdate =
+        existingLoadable == null ||
+        existingLoadable.state !== cachedLoadable.state ||
+        cachedLoadable.state !== 'hasValue' ||
+        !equal(existingLoadable.contents, cachedLoadable.contents);
+      
+      if (shouldUpdate) {
+        // Cache the results in the state to allow for cheaper lookup than
+        // iterating the tree cache of dependencies.
+        state.atomValues.set(key, cachedLoadable);
+      } else if (__DEV__) {
+        logSelectorRecalculation(key, true);
+      }
 
       /**
        * Ensure store contains correct dependencies if we hit the cache so that

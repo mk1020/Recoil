@@ -7760,9 +7760,18 @@ This is currently a DEV-only warning but will become a thrown exception in the n
       if (cachedLoadable) {
         var _getExecutionInfo;
 
-        // Cache the results in the state to allow for cheaper lookup than
-        // iterating the tree cache of dependencies.
-        state.atomValues.set(key, cachedLoadable);
+        // Check if the cached value is deeply equal to the existing value
+        // to prevent unnecessary re-renders even when hitting cache
+        const existingLoadable = state.atomValues.get(key);
+        const shouldUpdate = existingLoadable == null || existingLoadable.state !== cachedLoadable.state || cachedLoadable.state !== 'hasValue' || !fastDeepEqual(existingLoadable.contents, cachedLoadable.contents);
+
+        if (shouldUpdate) {
+          // Cache the results in the state to allow for cheaper lookup than
+          // iterating the tree cache of dependencies.
+          state.atomValues.set(key, cachedLoadable);
+        } else {
+          logSelectorRecalculation$1(key, true);
+        }
         /**
          * Ensure store contains correct dependencies if we hit the cache so that
          * the store deps and cache are in sync for a given state. This is important
@@ -7771,6 +7780,7 @@ This is currently a DEV-only warning but will become a thrown exception in the n
          * a change in deps in the store if the store deps for this state are empty
          * or stale.
          */
+
 
         updateDeps(store, state, depsAfterCacheLookup, (_getExecutionInfo = getExecutionInfo(store)) === null || _getExecutionInfo === void 0 ? void 0 : _getExecutionInfo.executionID);
       }
