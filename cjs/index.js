@@ -5339,7 +5339,15 @@ function useRecoilValueLoadable_SYNC_EXTERNAL_STORE(recoilValue) {
       const nextState = getState();
 
       if ((_prevState = prevState) !== null && _prevState !== void 0 && _prevState.loadable.is(nextState.loadable) && ((_prevState2 = prevState) === null || _prevState2 === void 0 ? void 0 : _prevState2.key) === nextState.key) {
+        if (process.env.NODE_ENV !== "production") {
+          logComponentRerender$1(nextState.key, true);
+        }
+
         return prevState;
+      }
+
+      if (process.env.NODE_ENV !== "production" && prevState != null) {
+        logComponentRerender$1(nextState.key, false);
       }
 
       prevState = nextState;
@@ -5380,7 +5388,13 @@ function useRecoilValueLoadable_TRANSITION_SUPPORT(recoilValue) {
 
   const updateState = useCallback$1(prevState => {
     const nextState = getState();
-    return prevState.loadable.is(nextState.loadable) && prevState.key === nextState.key ? prevState : nextState;
+    const isEqual = prevState.loadable.is(nextState.loadable) && prevState.key === nextState.key;
+
+    if (process.env.NODE_ENV !== "production") {
+      logComponentRerender$1(nextState.key, isEqual);
+    }
+
+    return isEqual ? prevState : nextState;
   }, [getState]); // Subscribe to Recoil state changes
 
   useEffect$3(() => {
@@ -5507,6 +5521,8 @@ function useRecoilValueLoadable_LEGACY(recoilValue) {
 */
 
 
+let loggedReactMode = false;
+
 function useRecoilValueLoadable(recoilValue) {
   if (process.env.NODE_ENV !== "production") {
     validateRecoilValue(recoilValue, 'useRecoilValueLoadable');
@@ -5515,6 +5531,14 @@ function useRecoilValueLoadable(recoilValue) {
   if (Recoil_gkx('recoil_memory_managament_2020')) {
     // eslint-disable-next-line fb-www/react-hooks
     Recoil_useRetain(recoilValue);
+  }
+
+  const mode = reactMode$3();
+  const useSyncExternalStoreSupported = currentRendererSupportsUseSyncExternalStore$1(); // Log the mode once for debugging
+
+  if (process.env.NODE_ENV !== "production" && !loggedReactMode) {
+    loggedReactMode = true;
+    console.log('[Recoil] React mode:', mode.mode, '| useSyncExternalStore supported:', useSyncExternalStoreSupported, '| Actual hook:', mode.mode === 'SYNC_EXTERNAL_STORE' && !useSyncExternalStoreSupported ? 'TRANSITION_SUPPORT (fallback)' : mode.mode);
   }
 
   return {
@@ -5526,9 +5550,9 @@ function useRecoilValueLoadable(recoilValue) {
     // by using a renderer with React 18+ that doesn't fully support React 18 we
     // don't want to break users if it can be avoided. As the current renderer can
     // change at runtime, we need to dynamically check and fallback if necessary.
-    SYNC_EXTERNAL_STORE: currentRendererSupportsUseSyncExternalStore$1() ? useRecoilValueLoadable_SYNC_EXTERNAL_STORE : useRecoilValueLoadable_TRANSITION_SUPPORT,
+    SYNC_EXTERNAL_STORE: useSyncExternalStoreSupported ? useRecoilValueLoadable_SYNC_EXTERNAL_STORE : useRecoilValueLoadable_TRANSITION_SUPPORT,
     LEGACY: useRecoilValueLoadable_LEGACY
-  }[reactMode$3().mode](recoilValue);
+  }[mode.mode](recoilValue);
 }
 /**
   Returns the value represented by the RecoilValue.

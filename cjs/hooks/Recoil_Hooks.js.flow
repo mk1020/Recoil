@@ -357,7 +357,13 @@ function useRecoilValueLoadable_SYNC_EXTERNAL_STORE<T>(
           prevState?.loadable.is(nextState.loadable) &&
           prevState?.key === nextState.key
         ) {
+          if (__DEV__) {
+            logComponentRerender(nextState.key, true);
+          }
           return prevState;
+        }
+        if (__DEV__ && prevState != null) {
+          logComponentRerender(nextState.key, false);
         }
         prevState = nextState;
         return nextState;
@@ -418,10 +424,12 @@ function useRecoilValueLoadable_TRANSITION_SUPPORT<T>(
   const updateState = useCallback(
     (prevState: {key: NodeKey, loadable: Loadable<T>}) => {
       const nextState = getState();
-      return prevState.loadable.is(nextState.loadable) &&
-        prevState.key === nextState.key
-        ? prevState
-        : nextState;
+      const isEqual = prevState.loadable.is(nextState.loadable) &&
+        prevState.key === nextState.key;
+      if (__DEV__) {
+        logComponentRerender(nextState.key, isEqual);
+      }
+      return isEqual ? prevState : nextState;
     },
     [getState],
   );
@@ -557,6 +565,7 @@ function useRecoilValueLoadable_LEGACY<T>(
   Like useRecoilValue(), but either returns the value if available or
   just undefined if not available for any reason, such as pending or error.
 */
+let loggedReactMode = false;
 function useRecoilValueLoadable<T>(recoilValue: RecoilValue<T>): Loadable<T> {
   if (__DEV__) {
     validateRecoilValue(recoilValue, 'useRecoilValueLoadable');
@@ -565,6 +574,20 @@ function useRecoilValueLoadable<T>(recoilValue: RecoilValue<T>): Loadable<T> {
     // eslint-disable-next-line fb-www/react-hooks
     useRetain(recoilValue);
   }
+  
+  const mode = reactMode();
+  const useSyncExternalStoreSupported = currentRendererSupportsUseSyncExternalStore();
+  
+  // Log the mode once for debugging
+  if (__DEV__ && !loggedReactMode) {
+    loggedReactMode = true;
+    console.log('[Recoil] React mode:', mode.mode, 
+      '| useSyncExternalStore supported:', useSyncExternalStoreSupported,
+      '| Actual hook:', mode.mode === 'SYNC_EXTERNAL_STORE' && !useSyncExternalStoreSupported 
+        ? 'TRANSITION_SUPPORT (fallback)' 
+        : mode.mode);
+  }
+  
   return {
     TRANSITION_SUPPORT: useRecoilValueLoadable_TRANSITION_SUPPORT,
     // Recoil will attemp to detect if `useSyncExternalStore()` is supported with
@@ -574,11 +597,11 @@ function useRecoilValueLoadable<T>(recoilValue: RecoilValue<T>): Loadable<T> {
     // by using a renderer with React 18+ that doesn't fully support React 18 we
     // don't want to break users if it can be avoided. As the current renderer can
     // change at runtime, we need to dynamically check and fallback if necessary.
-    SYNC_EXTERNAL_STORE: currentRendererSupportsUseSyncExternalStore()
+    SYNC_EXTERNAL_STORE: useSyncExternalStoreSupported
       ? useRecoilValueLoadable_SYNC_EXTERNAL_STORE
       : useRecoilValueLoadable_TRANSITION_SUPPORT,
     LEGACY: useRecoilValueLoadable_LEGACY,
-  }[reactMode().mode](recoilValue);
+  }[mode.mode](recoilValue);
 }
 
 /**
