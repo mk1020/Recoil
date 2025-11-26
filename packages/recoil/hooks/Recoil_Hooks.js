@@ -48,6 +48,7 @@ const expectationViolation = require('recoil-shared/util/Recoil_expectationViola
 const gkx = require('recoil-shared/util/Recoil_gkx');
 const isPromise = require('recoil-shared/util/Recoil_isPromise');
 const recoverableViolation = require('recoil-shared/util/Recoil_recoverableViolation');
+const {logComponentRerender} = require('recoil-shared/util/Recoil_PerformanceStats');
 const useComponentName = require('recoil-shared/util/Recoil_useComponentName');
 
 function handleLoadable<T>(
@@ -490,8 +491,15 @@ function useRecoilValueLoadable_LEGACY<T>(
         }
         const newLoadable = getLoadable();
         if (!prevLoadableRef.current?.is(newLoadable)) {
+          if (__DEV__) {
+            logComponentRerender(recoilValue.key, false);
+          }
           // $FlowFixMe[incompatible-call]
           forceUpdate(newLoadable);
+        } else {
+          if (__DEV__) {
+            logComponentRerender(recoilValue.key, true);
+          }
         }
         prevLoadableRef.current = newLoadable;
       },
@@ -526,8 +534,15 @@ function useRecoilValueLoadable_LEGACY<T>(
       }
       const newLoadable = getLoadable();
       if (!prevLoadableRef.current?.is(newLoadable)) {
+        if (__DEV__) {
+          logComponentRerender(recoilValue.key, false);
+        }
         // $FlowFixMe[incompatible-call]
         forceUpdate(newLoadable);
+      } else {
+        if (__DEV__) {
+          logComponentRerender(recoilValue.key, true);
+        }
       }
       prevLoadableRef.current = newLoadable;
     }
