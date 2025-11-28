@@ -363,7 +363,9 @@ function useRecoilValueLoadable_SYNC_EXTERNAL_STORE<T>(
           return prevState;
         }
         if (__DEV__ && prevState != null) {
-          logComponentRerender(nextState.key, false);
+          const prevContents = prevState.loadable.state === 'hasValue' ? prevState.loadable.contents : undefined;
+          const nextContents = nextState.loadable.state === 'hasValue' ? nextState.loadable.contents : undefined;
+          logComponentRerender(nextState.key, false, prevContents, nextContents);
         }
         prevState = nextState;
         return nextState;
@@ -427,7 +429,9 @@ function useRecoilValueLoadable_TRANSITION_SUPPORT<T>(
       const isEqual = prevState.loadable.is(nextState.loadable) &&
         prevState.key === nextState.key;
       if (__DEV__) {
-        logComponentRerender(nextState.key, isEqual);
+        const prevContents = prevState.loadable.state === 'hasValue' ? prevState.loadable.contents : undefined;
+        const nextContents = nextState.loadable.state === 'hasValue' ? nextState.loadable.contents : undefined;
+        logComponentRerender(nextState.key, isEqual, prevContents, nextContents);
       }
       return isEqual ? prevState : nextState;
     },
@@ -500,7 +504,9 @@ function useRecoilValueLoadable_LEGACY<T>(
         const newLoadable = getLoadable();
         if (!prevLoadableRef.current?.is(newLoadable)) {
           if (__DEV__) {
-            logComponentRerender(recoilValue.key, false);
+            const prevContents = prevLoadableRef.current?.state === 'hasValue' ? prevLoadableRef.current?.contents : undefined;
+            const nextContents = newLoadable.state === 'hasValue' ? newLoadable.contents : undefined;
+            logComponentRerender(recoilValue.key, false, prevContents, nextContents);
           }
           // $FlowFixMe[incompatible-call]
           forceUpdate(newLoadable);
@@ -543,7 +549,9 @@ function useRecoilValueLoadable_LEGACY<T>(
       const newLoadable = getLoadable();
       if (!prevLoadableRef.current?.is(newLoadable)) {
         if (__DEV__) {
-          logComponentRerender(recoilValue.key, false);
+          const prevContents = prevLoadableRef.current?.state === 'hasValue' ? prevLoadableRef.current?.contents : undefined;
+          const nextContents = newLoadable.state === 'hasValue' ? newLoadable.contents : undefined;
+          logComponentRerender(recoilValue.key, false, prevContents, nextContents);
         }
         // $FlowFixMe[incompatible-call]
         forceUpdate(newLoadable);

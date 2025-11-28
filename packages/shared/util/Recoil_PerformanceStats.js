@@ -6,12 +6,14 @@
  *
  * Performance statistics for tracking optimization effectiveness
  *
- * @flow strict
+ * @flow strict-local
  * @format
  * @oncall recoil
  */
 
 'use strict';
+
+const {detailedDiff} = require('deep-object-diff');
 
 type Stats = {
   atomUpdatesAttempted: number,
@@ -87,7 +89,12 @@ function logTransactionUpdate(key: string, prevented: boolean): void {
   }
 }
 
-function logComponentRerender(key: string, prevented: boolean): void {
+function logComponentRerender(
+  key: string,
+  prevented: boolean,
+  prevContents?: mixed,
+  nextContents?: mixed
+): void {
   if (prevented) {
     stats.componentRerendersPrevented++;
     if (loggingEnabled) {
@@ -96,7 +103,13 @@ function logComponentRerender(key: string, prevented: boolean): void {
   } else {
     stats.componentRerendersTriggered++;
     if (loggingEnabled) {
-      console.log(`[Recoil] 🔄 Component re-render triggered: "${key}" (data changed)`);
+      console.log(`[Recoil] 🔄 Re-render: "${key}"`);
+
+      if (prevContents !== undefined && nextContents !== undefined) {
+        console.log('   📦 BEFORE:', prevContents);
+        console.log('   📦 AFTER:', nextContents);
+        console.log('   📝 DIFF:', detailedDiff(prevContents, nextContents));
+      }
     }
   }
 }
