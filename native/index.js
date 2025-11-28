@@ -1,5 +1,4 @@
 import react from 'react';
-import deepObjectDiff from 'deep-object-diff';
 import reactNative from 'react-native';
 
 var fastDeepEqual = function equal(a, b) {
@@ -2747,8 +2746,209 @@ var Recoil_SnapshotCache = {
   invalidateMemoizedSnapshot
 };
 
+/**
+ * 
+ * @format
+ */
+
+function isDate(d) {
+  return d instanceof Date;
+}
+
+function isEmpty(o) {
+  if (o == null || typeof o !== 'object') return true;
+  return Object.keys(o).length === 0;
+}
+
+function isObject(o) {
+  return o != null && typeof o === 'object';
+}
+
+function hasOwnProperty(o, key) {
+  if (o == null || typeof o !== 'object') return false;
+  return Object.prototype.hasOwnProperty.call(o, key);
+}
+
+function isEmptyObject(o) {
+  return isObject(o) && isEmpty(o);
+}
+
+function makeObjectWithoutPrototype() {
+  return Object.create(null);
+}
+
+var utils = {
+  isDate,
+  isEmpty,
+  isObject,
+  hasOwnProperty,
+  isEmptyObject,
+  makeObjectWithoutPrototype
+};
+
 const {
-  detailedDiff
+  isDate: isDate$1,
+  isEmptyObject: isEmptyObject$1,
+  isObject: isObject$1,
+  hasOwnProperty: hasOwnProperty$1,
+  makeObjectWithoutPrototype: makeObjectWithoutPrototype$1
+} = utils;
+
+function diff(lhs, rhs) {
+  if (lhs === rhs) return {}; // equal return no diff
+
+  if (!isObject$1(lhs) || !isObject$1(rhs)) return rhs; // return updated rhs
+  // $FlowFixMe[prop-missing]
+
+  const deletedValues = Object.keys(lhs).reduce((acc, key) => {
+    if (!hasOwnProperty$1(rhs, key)) {
+      acc[key] = undefined;
+    }
+
+    return acc;
+  }, makeObjectWithoutPrototype$1());
+
+  if (isDate$1(lhs) || isDate$1(rhs)) {
+    // $FlowFixMe[prop-missing]
+    if (lhs.valueOf() == rhs.valueOf()) return {};
+    return rhs;
+  } // $FlowFixMe[prop-missing]
+
+
+  return Object.keys(rhs).reduce((acc, key) => {
+    if (!hasOwnProperty$1(lhs, key)) {
+      // $FlowFixMe[prop-missing]
+      acc[key] = rhs[key]; // return added r key
+
+      return acc;
+    } // $FlowFixMe[prop-missing]
+
+
+    const difference = diff(lhs[key], rhs[key]); // If the difference is empty, and the lhs is an empty object or the rhs is not an empty object
+    // $FlowFixMe[prop-missing]
+
+    if (isEmptyObject$1(difference) && !isDate$1(difference) && ( // $FlowFixMe[prop-missing]
+    isEmptyObject$1(lhs[key]) || !isEmptyObject$1(rhs[key]))) return acc; // return no diff
+
+    acc[key] = difference; // return updated key
+
+    return acc; // return updated key
+  }, deletedValues);
+}
+
+var diff_1 = diff;
+
+const {
+  isEmpty: isEmpty$1,
+  isObject: isObject$2,
+  hasOwnProperty: hasOwnProperty$2,
+  makeObjectWithoutPrototype: makeObjectWithoutPrototype$2
+} = utils;
+
+function addedDiff(lhs, rhs) {
+  if (lhs === rhs || !isObject$2(lhs) || !isObject$2(rhs)) return {}; // $FlowFixMe[prop-missing]
+
+  return Object.keys(rhs).reduce((acc, key) => {
+    if (hasOwnProperty$2(lhs, key)) {
+      // $FlowFixMe[prop-missing]
+      const difference = addedDiff(lhs[key], rhs[key]);
+      if (isObject$2(difference) && isEmpty$1(difference)) return acc;
+      acc[key] = difference;
+      return acc;
+    } // $FlowFixMe[prop-missing]
+
+
+    acc[key] = rhs[key];
+    return acc;
+  }, makeObjectWithoutPrototype$2());
+}
+
+var added = addedDiff;
+
+const {
+  isEmpty: isEmpty$2,
+  isObject: isObject$3,
+  hasOwnProperty: hasOwnProperty$3,
+  makeObjectWithoutPrototype: makeObjectWithoutPrototype$3
+} = utils;
+
+function deletedDiff(lhs, rhs) {
+  if (lhs === rhs || !isObject$3(lhs) || !isObject$3(rhs)) return {}; // $FlowFixMe[prop-missing]
+
+  return Object.keys(lhs).reduce((acc, key) => {
+    if (hasOwnProperty$3(rhs, key)) {
+      // $FlowFixMe[prop-missing]
+      const difference = deletedDiff(lhs[key], rhs[key]);
+      if (isObject$3(difference) && isEmpty$2(difference)) return acc;
+      acc[key] = difference;
+      return acc;
+    }
+
+    acc[key] = undefined;
+    return acc;
+  }, makeObjectWithoutPrototype$3());
+}
+
+var deleted = deletedDiff;
+
+const {
+  isDate: isDate$2,
+  isEmptyObject: isEmptyObject$2,
+  isObject: isObject$4,
+  hasOwnProperty: hasOwnProperty$4,
+  makeObjectWithoutPrototype: makeObjectWithoutPrototype$4
+} = utils;
+
+function updatedDiff(lhs, rhs) {
+  if (lhs === rhs) return {};
+  if (!isObject$4(lhs) || !isObject$4(rhs)) return rhs;
+
+  if (isDate$2(lhs) || isDate$2(rhs)) {
+    // $FlowFixMe[prop-missing]
+    if (lhs.valueOf() == rhs.valueOf()) return {};
+    return rhs;
+  } // $FlowFixMe[prop-missing]
+
+
+  return Object.keys(rhs).reduce((acc, key) => {
+    if (hasOwnProperty$4(lhs, key)) {
+      // $FlowFixMe[prop-missing]
+      const difference = updatedDiff(lhs[key], rhs[key]); // If the difference is empty, and the lhs is an empty object or the rhs is not an empty object
+      // $FlowFixMe[prop-missing]
+
+      if (isEmptyObject$2(difference) && !isDate$2(difference) && ( // $FlowFixMe[prop-missing]
+      isEmptyObject$2(lhs[key]) || !isEmptyObject$2(rhs[key]))) return acc; // return no diff
+
+      acc[key] = difference;
+      return acc;
+    }
+
+    return acc;
+  }, makeObjectWithoutPrototype$4());
+}
+
+var updated = updatedDiff;
+
+function detailedDiff(lhs, rhs) {
+  return {
+    added: added(lhs, rhs),
+    deleted: deleted(lhs, rhs),
+    updated: updated(lhs, rhs)
+  };
+}
+
+var detailed = detailedDiff;
+
+var deepObjectDiff = {
+  diff: diff_1,
+  addedDiff: added,
+  deletedDiff: deleted,
+  updatedDiff: updated,
+  detailedDiff: detailed
+};
+
+const {
+  detailedDiff: detailedDiff$1
 } = deepObjectDiff;
 
 const stats = {
@@ -2831,7 +3031,8 @@ function logComponentRerender(key, prevented, prevContents, nextContents) {
       if (prevContents !== undefined && nextContents !== undefined) {
         console.log('   📦 BEFORE:', prevContents);
         console.log('   📦 AFTER:', nextContents);
-        console.log('   📝 DIFF:', detailedDiff(prevContents, nextContents));
+        const changes = detailedDiff$1(prevContents, nextContents);
+        console.log('   📝 DIFF:', changes);
       }
     }
   }
