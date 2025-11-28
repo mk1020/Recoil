@@ -274,6 +274,8 @@ function selector<T>(
 
   const executionInfoMap: Map<Store, ExecutionInfo<T>> = new Map();
   let liveStoresCount = 0;
+  // Store last known value for logging purposes (dev only)
+  let lastKnownValue: ?T = undefined;
 
   function selectorIsLive() {
     return !gkx('recoil_memory_managament_2020') || liveStoresCount > 0;
@@ -1080,6 +1082,10 @@ function selector<T>(
       // but still update the cache with the EXISTING loadable to maintain reference equality
       if (__DEV__) {
         logSelectorRecalculation(key, true);
+        // Update lastKnownValue even when prevented
+        if (existingLoadable?.state === 'hasValue') {
+          lastKnownValue = existingLoadable.contents;
+        }
       }
       try {
         cache.set(depValuesToDepRoute(depValues), existingLoadable);
@@ -1092,9 +1098,17 @@ function selector<T>(
     }
 
     if (__DEV__) {
-      const prevContents = existingLoadable?.state === 'hasValue' ? existingLoadable.contents : undefined;
+      // Try to get prev value from existingLoadable or lastKnownValue
+      const prevContents = existingLoadable?.state === 'hasValue'
+        ? existingLoadable.contents
+        : lastKnownValue;
       const nextContents = loadable.state === 'hasValue' ? loadable.contents : undefined;
       logSelectorRecalculation(key, false, prevContents, nextContents);
+
+      // Update lastKnownValue for future logging
+      if (loadable.state === 'hasValue') {
+        lastKnownValue = loadable.contents;
+      }
     }
 
     state.atomValues.set(key, loadable);
