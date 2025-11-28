@@ -568,7 +568,7 @@ function baseAtom<T>(options: BaseAtomOptions<T>): RecoilState<T> {
         return new Map();
       }
       if (__DEV__ && existing.state === 'hasValue') {
-        logAtomUpdate(key, false);
+        logAtomUpdate(key, false, existing.contents, newValue);
       }
     } else if (
       !state.nonvalidatedAtoms.has(key) &&

@@ -2978,50 +2978,65 @@ function isLoggingEnabled() {
   return loggingEnabled;
 }
 
-function logAtomUpdate(key, prevented) {
+function logAtomUpdate(key, prevented, prevContents, nextContents) {
   stats.atomUpdatesAttempted++;
 
   if (prevented) {
     stats.atomUpdatesPrevented++;
 
     if (loggingEnabled) {
-      console.log(`[Recoil] ⏭️  Atom update PREVENTED: "${key}" (deep equal, same data)`);
+      console.log(`[Recoil] ⏭️  Atom update PREVENTED: "${key}"`);
     }
   } else {
     if (loggingEnabled) {
-      console.log(`[Recoil] 🔄 Atom updated: "${key}" (data changed)`);
+      if (prevContents !== undefined && nextContents !== undefined) {
+        const changes = detailedDiff$1(prevContents, nextContents);
+        console.log(`[Recoil] 🔄 Atom: updated "${key}" | BEFORE:`, prevContents, '| AFTER:', nextContents, '| DIFF:', changes);
+      } else {
+        console.log(`[Recoil] 🔄 Atom updated: "${key}" (data changed)`);
+      }
     }
   }
 }
 
-function logSelectorRecalculation(key, prevented) {
+function logSelectorRecalculation(key, prevented, prevContents, nextContents) {
   stats.selectorRecalculationsAttempted++;
 
   if (prevented) {
     stats.selectorRecalculationsPrevented++;
 
     if (loggingEnabled) {
-      console.log(`[Recoil] ⏭️  Selector re-render PREVENTED: "${key}" (deep equal, same data)`);
+      console.log(`[Recoil] ⏭️  Selector PREVENTED: "${key}"`);
     }
   } else {
     if (loggingEnabled) {
-      console.log(`[Recoil] 🔄 Selector updated: "${key}" (data changed)`);
+      if (prevContents !== undefined && nextContents !== undefined) {
+        const changes = detailedDiff$1(prevContents, nextContents);
+        console.log(`[Recoil] 🔄 Selector re-rendered: "${key}" | BEFORE:`, prevContents, '| AFTER:', nextContents, '| DIFF:', changes);
+      } else {
+        console.log(`[Recoil] 🔄 Selector updated: "${key}" (data changed)`);
+      }
     }
   }
 }
 
-function logTransactionUpdate(key, prevented) {
+function logTransactionUpdate(key, prevented, prevContents, nextContents) {
   stats.transactionUpdatesAttempted++;
 
   if (prevented) {
     stats.transactionUpdatesPrevented++;
 
     if (loggingEnabled) {
-      console.log(`[Recoil] ⏭️  Transaction PREVENTED: "${key}" (deep equal, same data)`);
+      console.log(`[Recoil] ⏭️  Transaction PREVENTED: "${key}"`);
     }
   } else {
     if (loggingEnabled) {
-      console.log(`[Recoil] 🔄 Transaction applied: "${key}" (data changed)`);
+      if (prevContents !== undefined && nextContents !== undefined) {
+        const changes = detailedDiff$1(prevContents, nextContents);
+        console.log(`[Recoil] 🔄 Transaction applied: "${key}" | BEFORE:`, prevContents, '| AFTER:', nextContents, '| DIFF:', changes);
+      } else {
+        console.log(`[Recoil] 🔄 Transaction applied: "${key}" (data changed)`);
+      }
     }
   }
 }
@@ -3033,13 +3048,8 @@ function logComponentRerender(key, prevented, prevContents, nextContents) {
     stats.componentRerendersTriggered++;
 
     if (loggingEnabled) {
-      console.log(`[Recoil] 🔄 Re-render: "${key}"`);
-
       if (prevContents !== undefined && nextContents !== undefined) {
-        console.log('   📦 BEFORE:', prevContents);
-        console.log('   📦 AFTER:', nextContents);
-        const changes = detailedDiff$1(prevContents, nextContents);
-        console.log('   📝 DIFF:', changes);
+        const changes = detailedDiff$1(prevContents, nextContents); // console.log(`[Recoil] 🔄 Componenr Re-render: "${key}" | BEFORE:`, prevContents, '| AFTER:', nextContents, '| DIFF:', changes);
       }
     }
   }
@@ -3278,7 +3288,9 @@ function writeLoadableToTreeState(state, key, loadable) {
     }
 
     if (process.env.NODE_ENV !== "production") {
-      logTransactionUpdate$1(key, false);
+      const prevContents = (existingLoadable === null || existingLoadable === void 0 ? void 0 : existingLoadable.state) === 'hasValue' ? existingLoadable.contents : undefined;
+      const nextContents = loadable.state === 'hasValue' ? loadable.contents : undefined;
+      logTransactionUpdate$1(key, false, prevContents, nextContents);
     }
 
     state.atomValues.set(key, loadable);
@@ -8261,7 +8273,9 @@ function selector(options) {
     }
 
     if (process.env.NODE_ENV !== "production") {
-      logSelectorRecalculation$1(key, false);
+      const prevContents = (existingLoadable === null || existingLoadable === void 0 ? void 0 : existingLoadable.state) === 'hasValue' ? existingLoadable.contents : undefined;
+      const nextContents = loadable.state === 'hasValue' ? loadable.contents : undefined;
+      logSelectorRecalculation$1(key, false, prevContents, nextContents);
     }
 
     state.atomValues.set(key, loadable);
@@ -8838,7 +8852,7 @@ function baseAtom(options) {
       }
 
       if (process.env.NODE_ENV !== "production" && existing.state === 'hasValue') {
-        logAtomUpdate$1(key, false);
+        logAtomUpdate$1(key, false, existing.contents, newValue);
       }
     } else if (!state.nonvalidatedAtoms.has(key) && newValue instanceof DefaultValue$2) {
       return new Map();
