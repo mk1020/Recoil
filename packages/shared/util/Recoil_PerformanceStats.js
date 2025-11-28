@@ -47,44 +47,74 @@ function isLoggingEnabled(): boolean {
   return loggingEnabled;
 }
 
-function logAtomUpdate(key: string, prevented: boolean): void {
+function logAtomUpdate(
+  key: string,
+  prevented: boolean,
+  prevContents?: mixed,
+  nextContents?: mixed,
+): void {
   stats.atomUpdatesAttempted++;
   if (prevented) {
     stats.atomUpdatesPrevented++;
     if (loggingEnabled) {
-      console.log(`[Recoil] ⏭️  Atom update PREVENTED: "${key}" (deep equal, same data)`);
+      console.log(`[Recoil] ⏭️  Atom update PREVENTED: "${key}"`);
     }
   } else {
     if (loggingEnabled) {
-      console.log(`[Recoil] 🔄 Atom updated: "${key}" (data changed)`);
+      if (prevContents !== undefined && nextContents !== undefined) {
+        const changes = detailedDiff(prevContents, nextContents);
+        console.log(`[Recoil] 🔄 Atom: updated "${key}" | BEFORE:`, prevContents, '| AFTER:', nextContents, '| DIFF:', changes);
+      } else {
+        console.log(`[Recoil] 🔄 Atom updated: "${key}" (data changed)`);
+      }
     }
   }
 }
 
-function logSelectorRecalculation(key: string, prevented: boolean): void {
+function logSelectorRecalculation(
+  key: string,
+  prevented: boolean,
+  prevContents?: mixed,
+  nextContents?: mixed,
+): void {
   stats.selectorRecalculationsAttempted++;
   if (prevented) {
     stats.selectorRecalculationsPrevented++;
     if (loggingEnabled) {
-      console.log(`[Recoil] ⏭️  Selector re-render PREVENTED: "${key}" (deep equal, same data)`);
+      console.log(`[Recoil] ⏭️  Selector PREVENTED: "${key}"`);
     }
   } else {
     if (loggingEnabled) {
-      console.log(`[Recoil] 🔄 Selector updated: "${key}" (data changed)`);
+      if (prevContents !== undefined && nextContents !== undefined) {
+        const changes = detailedDiff(prevContents, nextContents);
+        console.log(`[Recoil] 🔄 Selector re-rendered: "${key}" | BEFORE:`, prevContents, '| AFTER:', nextContents, '| DIFF:', changes);
+      } else {
+        console.log(`[Recoil] 🔄 Selector updated: "${key}" (data changed)`);
+      }
     }
   }
 }
 
-function logTransactionUpdate(key: string, prevented: boolean): void {
+function logTransactionUpdate(
+  key: string,
+  prevented: boolean,
+  prevContents?: mixed,
+  nextContents?: mixed,
+): void {
   stats.transactionUpdatesAttempted++;
   if (prevented) {
     stats.transactionUpdatesPrevented++;
     if (loggingEnabled) {
-      console.log(`[Recoil] ⏭️  Transaction PREVENTED: "${key}" (deep equal, same data)`);
+      console.log(`[Recoil] ⏭️  Transaction PREVENTED: "${key}"`);
     }
   } else {
     if (loggingEnabled) {
-      console.log(`[Recoil] 🔄 Transaction applied: "${key}" (data changed)`);
+      if (prevContents !== undefined && nextContents !== undefined) {
+        const changes = detailedDiff(prevContents, nextContents);
+        console.log(`[Recoil] 🔄 Transaction applied: "${key}" | BEFORE:`, prevContents, '| AFTER:', nextContents, '| DIFF:', changes);
+      } else {
+        console.log(`[Recoil] 🔄 Transaction applied: "${key}" (data changed)`);
+      }
     }
   }
 }
@@ -98,18 +128,16 @@ function logComponentRerender(
   if (prevented) {
     stats.componentRerendersPrevented++;
     if (loggingEnabled) {
-      // console.log(`[Recoil] ⏭️  Component re-render PREVENTED: "${key}" (deep equal via Loadable.is())`);
+      // console.log(`[Recoil] ⏭️  Re-render PREVENTED: "${key}"`);
     }
   } else {
     stats.componentRerendersTriggered++;
     if (loggingEnabled) {
-      console.log(`[Recoil] 🔄 Re-render: "${key}"`);
-
       if (prevContents !== undefined && nextContents !== undefined) {
-        console.log('   📦 BEFORE:', prevContents);
-        console.log('   📦 AFTER:', nextContents);
         const changes = detailedDiff(prevContents, nextContents);
-        console.log('   📝 DIFF:', changes);
+        // console.log(`[Recoil] 🔄 Componenr Re-render: "${key}" | BEFORE:`, prevContents, '| AFTER:', nextContents, '| DIFF:', changes);
+      } else {
+        // console.log(`[Recoil] 🔄 Componenr Re-render: "${key}"`);
       }
     }
   }

@@ -1092,7 +1092,9 @@ function selector<T>(
     }
 
     if (__DEV__) {
-      logSelectorRecalculation(key, false);
+      const prevContents = existingLoadable?.state === 'hasValue' ? existingLoadable.contents : undefined;
+      const nextContents = loadable.state === 'hasValue' ? loadable.contents : undefined;
+      logSelectorRecalculation(key, false, prevContents, nextContents);
     }
 
     state.atomValues.set(key, loadable);

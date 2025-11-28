@@ -197,7 +197,7 @@ function writeLoadableToTreeState(
       loadable.state === 'hasValue' &&
       (existingLoadable.contents === loadable.contents ||
         equal(existingLoadable.contents, loadable.contents));
-    
+
     if (isEqual) {
       // Value hasn't changed, skip update but still mark as dirty for consistency
       if (__DEV__) {
@@ -207,11 +207,13 @@ function writeLoadableToTreeState(
       state.nonvalidatedAtoms.delete(key);
       return;
     }
-    
+
     if (__DEV__) {
-      logTransactionUpdate(key, false);
+      const prevContents = existingLoadable?.state === 'hasValue' ? existingLoadable.contents : undefined;
+      const nextContents = loadable.state === 'hasValue' ? loadable.contents : undefined;
+      logTransactionUpdate(key, false, prevContents, nextContents);
     }
-    
+
     state.atomValues.set(key, loadable);
   }
   state.dirtyAtoms.add(key);
