@@ -3137,18 +3137,6 @@ const {
   invalidateMemoizedSnapshot: invalidateMemoizedSnapshot$1
 } = Recoil_SnapshotCache;
 
-
-
-
-
-
-
-
-
-const {
-  logTransactionUpdate: logTransactionUpdate$1
-} = Recoil_PerformanceStats;
-
 function getRecoilValueAsLoadable(store, {
   key
 }, treeState = store.getState().currentTree) {
@@ -3271,19 +3259,9 @@ function writeLoadableToTreeState(state, key, loadable) {
 
     if (isEqual) {
       // Value hasn't changed, skip update but still mark as dirty for consistency
-      if (process.env.NODE_ENV !== "production") {
-        logTransactionUpdate$1(key, true);
-      }
-
       state.dirtyAtoms.add(key);
       state.nonvalidatedAtoms.delete(key);
       return;
-    }
-
-    if (process.env.NODE_ENV !== "production") {
-      const prevContents = (existingLoadable === null || existingLoadable === void 0 ? void 0 : existingLoadable.state) === 'hasValue' ? existingLoadable.contents : undefined;
-      const nextContents = loadable.state === 'hasValue' ? loadable.contents : undefined;
-      logTransactionUpdate$1(key, false, prevContents, nextContents);
     }
 
     state.atomValues.set(key, loadable);
@@ -7563,7 +7541,9 @@ function selector(options) {
   }, key);
   const retainedBy = retainedByOptionWithDefault$1(options.retainedBy_UNSTABLE);
   const executionInfoMap = new Map();
-  let liveStoresCount = 0;
+  let liveStoresCount = 0; // Store last known value for logging purposes (dev only)
+
+  let lastKnownValue = undefined;
 
   function selectorIsLive() {
     return !Recoil_gkx('recoil_memory_managament_2020') || liveStoresCount > 0;
@@ -8254,7 +8234,11 @@ function selector(options) {
       // Value hasn't changed, don't update state.atomValues
       // but still update the cache with the EXISTING loadable to maintain reference equality
       if (process.env.NODE_ENV !== "production") {
-        logSelectorRecalculation$1(key, true);
+        logSelectorRecalculation$1(key, true); // Update lastKnownValue even when prevented
+
+        if ((existingLoadable === null || existingLoadable === void 0 ? void 0 : existingLoadable.state) === 'hasValue') {
+          lastKnownValue = existingLoadable.contents;
+        }
       }
 
       try {
@@ -8267,9 +8251,14 @@ function selector(options) {
     }
 
     if (process.env.NODE_ENV !== "production") {
-      const prevContents = (existingLoadable === null || existingLoadable === void 0 ? void 0 : existingLoadable.state) === 'hasValue' ? existingLoadable.contents : undefined;
+      // Try to get prev value from existingLoadable or lastKnownValue
+      const prevContents = (existingLoadable === null || existingLoadable === void 0 ? void 0 : existingLoadable.state) === 'hasValue' ? existingLoadable.contents : lastKnownValue;
       const nextContents = loadable.state === 'hasValue' ? loadable.contents : undefined;
-      logSelectorRecalculation$1(key, false, prevContents, nextContents);
+      logSelectorRecalculation$1(key, false, prevContents, nextContents); // Update lastKnownValue for future logging
+
+      if (loadable.state === 'hasValue') {
+        lastKnownValue = loadable.contents;
+      }
     }
 
     state.atomValues.set(key, loadable);
