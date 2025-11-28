@@ -2837,10 +2837,6 @@ function logTransactionUpdate(key, prevented) {
 function logComponentRerender(key, prevented) {
   if (prevented) {
     stats.componentRerendersPrevented++;
-
-    if (loggingEnabled) {
-      console.log(`[Recoil] ⏭️  Component re-render PREVENTED: "${key}" (deep equal via Loadable.is())`);
-    }
   } else {
     stats.componentRerendersTriggered++;
 
