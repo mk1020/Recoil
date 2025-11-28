@@ -91,7 +91,7 @@ function logComponentRerender(key: string, prevented: boolean): void {
   if (prevented) {
     stats.componentRerendersPrevented++;
     if (loggingEnabled) {
-      console.log(`[Recoil] ⏭️  Component re-render PREVENTED: "${key}" (deep equal via Loadable.is())`);
+      // console.log(`[Recoil] ⏭️  Component re-render PREVENTED: "${key}" (deep equal via Loadable.is())`);
     }
   } else {
     stats.componentRerendersTriggered++;
@@ -129,20 +129,20 @@ function printStats(): void {
   console.log(`\n🔹 Atoms:`);
   console.log(`   Attempted: ${stats.atomUpdatesAttempted}`);
   console.log(`   Prevented: ${stats.atomUpdatesPrevented} (${getPercentage(stats.atomUpdatesPrevented, stats.atomUpdatesAttempted)}%)`);
-  
+
   console.log(`\n🔹 Selectors (setCache):`);
   console.log(`   Attempted: ${stats.selectorRecalculationsAttempted}`);
   console.log(`   Prevented: ${stats.selectorRecalculationsPrevented} (${getPercentage(stats.selectorRecalculationsPrevented, stats.selectorRecalculationsAttempted)}%)`);
-  
+
   console.log(`\n🔹 Transactions:`);
   console.log(`   Attempted: ${stats.transactionUpdatesAttempted}`);
   console.log(`   Prevented: ${stats.transactionUpdatesPrevented} (${getPercentage(stats.transactionUpdatesPrevented, stats.transactionUpdatesAttempted)}%)`);
-  
+
   const componentTotal = stats.componentRerendersPrevented + stats.componentRerendersTriggered;
   console.log(`\n🔹 Component Re-renders (hooks):`);
   console.log(`   Triggered: ${stats.componentRerendersTriggered}`);
   console.log(`   Prevented: ${stats.componentRerendersPrevented} (${getPercentage(stats.componentRerendersPrevented, componentTotal)}%)`);
-  
+
   console.log(`\n🎯 Total operations prevented: ${totalPrevented}`);
   console.log('========================================\n');
 }
