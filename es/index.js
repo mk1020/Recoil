@@ -1,4 +1,5 @@
 import react from 'react';
+import deepObjectDiff from 'deep-object-diff';
 import reactDom from 'react-dom';
 import reactNative from 'react-native';
 
@@ -2747,18 +2748,9 @@ var Recoil_SnapshotCache = {
   invalidateMemoizedSnapshot
 };
 
-/**
- * Copyright (c) Meta Platforms, Inc. and affiliates.
- *
- * This source code is licensed under the MIT license found in the
- * LICENSE file in the root directory of this source tree.
- *
- * Performance statistics for tracking optimization effectiveness
- *
- * 
- * @format
- * @oncall recoil
- */
+const {
+  detailedDiff
+} = deepObjectDiff;
 
 const stats = {
   atomUpdatesAttempted: 0,
@@ -2828,14 +2820,20 @@ function logTransactionUpdate(key, prevented) {
   }
 }
 
-function logComponentRerender(key, prevented) {
+function logComponentRerender(key, prevented, prevContents, nextContents) {
   if (prevented) {
     stats.componentRerendersPrevented++;
   } else {
     stats.componentRerendersTriggered++;
 
     if (loggingEnabled) {
-      console.log(`[Recoil] 🔄 Component re-render triggered: "${key}" (data changed)`);
+      console.log(`[Recoil] 🔄 Re-render: "${key}"`);
+
+      if (prevContents !== undefined && nextContents !== undefined) {
+        console.log('   📦 BEFORE:', prevContents);
+        console.log('   📦 AFTER:', nextContents);
+        console.log('   📝 DIFF:', detailedDiff(prevContents, nextContents));
+      }
     }
   }
 }
@@ -5337,7 +5335,9 @@ function useRecoilValueLoadable_SYNC_EXTERNAL_STORE(recoilValue) {
       }
 
       if (process.env.NODE_ENV !== "production" && prevState != null) {
-        logComponentRerender$1(nextState.key, false);
+        const prevContents = prevState.loadable.state === 'hasValue' ? prevState.loadable.contents : undefined;
+        const nextContents = nextState.loadable.state === 'hasValue' ? nextState.loadable.contents : undefined;
+        logComponentRerender$1(nextState.key, false, prevContents, nextContents);
       }
 
       prevState = nextState;
@@ -5381,7 +5381,9 @@ function useRecoilValueLoadable_TRANSITION_SUPPORT(recoilValue) {
     const isEqual = prevState.loadable.is(nextState.loadable) && prevState.key === nextState.key;
 
     if (process.env.NODE_ENV !== "production") {
-      logComponentRerender$1(nextState.key, isEqual);
+      const prevContents = prevState.loadable.state === 'hasValue' ? prevState.loadable.contents : undefined;
+      const nextContents = nextState.loadable.state === 'hasValue' ? nextState.loadable.contents : undefined;
+      logComponentRerender$1(nextState.key, isEqual, prevContents, nextContents);
     }
 
     return isEqual ? prevState : nextState;
@@ -5440,7 +5442,11 @@ function useRecoilValueLoadable_LEGACY(recoilValue) {
 
       if (!((_prevLoadableRef$curr = prevLoadableRef.current) !== null && _prevLoadableRef$curr !== void 0 && _prevLoadableRef$curr.is(newLoadable))) {
         if (process.env.NODE_ENV !== "production") {
-          logComponentRerender$1(recoilValue.key, false);
+          var _prevLoadableRef$curr2, _prevLoadableRef$curr3;
+
+          const prevContents = ((_prevLoadableRef$curr2 = prevLoadableRef.current) === null || _prevLoadableRef$curr2 === void 0 ? void 0 : _prevLoadableRef$curr2.state) === 'hasValue' ? (_prevLoadableRef$curr3 = prevLoadableRef.current) === null || _prevLoadableRef$curr3 === void 0 ? void 0 : _prevLoadableRef$curr3.contents : undefined;
+          const nextContents = newLoadable.state === 'hasValue' ? newLoadable.contents : undefined;
+          logComponentRerender$1(recoilValue.key, false, prevContents, nextContents);
         } // $FlowFixMe[incompatible-call]
 
 
@@ -5477,7 +5483,7 @@ function useRecoilValueLoadable_LEGACY(recoilValue) {
         forceUpdate([]);
       });
     } else {
-      var _prevLoadableRef$curr2;
+      var _prevLoadableRef$curr4;
 
       if (!Recoil_gkx('recoil_suppress_rerender_in_callback')) {
         return forceUpdate([]);
@@ -5485,9 +5491,13 @@ function useRecoilValueLoadable_LEGACY(recoilValue) {
 
       const newLoadable = getLoadable();
 
-      if (!((_prevLoadableRef$curr2 = prevLoadableRef.current) !== null && _prevLoadableRef$curr2 !== void 0 && _prevLoadableRef$curr2.is(newLoadable))) {
+      if (!((_prevLoadableRef$curr4 = prevLoadableRef.current) !== null && _prevLoadableRef$curr4 !== void 0 && _prevLoadableRef$curr4.is(newLoadable))) {
         if (process.env.NODE_ENV !== "production") {
-          logComponentRerender$1(recoilValue.key, false);
+          var _prevLoadableRef$curr5, _prevLoadableRef$curr6;
+
+          const prevContents = ((_prevLoadableRef$curr5 = prevLoadableRef.current) === null || _prevLoadableRef$curr5 === void 0 ? void 0 : _prevLoadableRef$curr5.state) === 'hasValue' ? (_prevLoadableRef$curr6 = prevLoadableRef.current) === null || _prevLoadableRef$curr6 === void 0 ? void 0 : _prevLoadableRef$curr6.contents : undefined;
+          const nextContents = newLoadable.state === 'hasValue' ? newLoadable.contents : undefined;
+          logComponentRerender$1(recoilValue.key, false, prevContents, nextContents);
         } // $FlowFixMe[incompatible-call]
 
 

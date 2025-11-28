@@ -1,10 +1,11 @@
 (function (global, factory) {
-  typeof exports === 'object' && typeof module !== 'undefined' ? factory(exports, require('react'), require('react-dom'), require('react-native')) :
-  typeof define === 'function' && define.amd ? define(['exports', 'react', 'react-dom', 'react-native'], factory) :
-  (global = global || self, factory(global.Recoil = {}, global.React, global.ReactDOM, global.reactNative));
-}(this, (function (exports, react, reactDom, reactNative) { 'use strict';
+  typeof exports === 'object' && typeof module !== 'undefined' ? factory(exports, require('react'), require('deep-object-diff'), require('react-dom'), require('react-native')) :
+  typeof define === 'function' && define.amd ? define(['exports', 'react', 'deep-object-diff', 'react-dom', 'react-native'], factory) :
+  (global = global || self, factory(global.Recoil = {}, global.React, global.deepObjectDiff, global.ReactDOM, global.reactNative));
+}(this, (function (exports, react, deepObjectDiff, reactDom, reactNative) { 'use strict';
 
   react = react && Object.prototype.hasOwnProperty.call(react, 'default') ? react['default'] : react;
+  deepObjectDiff = deepObjectDiff && Object.prototype.hasOwnProperty.call(deepObjectDiff, 'default') ? deepObjectDiff['default'] : deepObjectDiff;
   reactDom = reactDom && Object.prototype.hasOwnProperty.call(reactDom, 'default') ? reactDom['default'] : reactDom;
   reactNative = reactNative && Object.prototype.hasOwnProperty.call(reactNative, 'default') ? reactNative['default'] : reactNative;
 
@@ -2750,18 +2751,9 @@
     invalidateMemoizedSnapshot
   };
 
-  /**
-   * Copyright (c) Meta Platforms, Inc. and affiliates.
-   *
-   * This source code is licensed under the MIT license found in the
-   * LICENSE file in the root directory of this source tree.
-   *
-   * Performance statistics for tracking optimization effectiveness
-   *
-   * 
-   * @format
-   * @oncall recoil
-   */
+  const {
+    detailedDiff
+  } = deepObjectDiff;
 
   const stats = {
     atomUpdatesAttempted: 0,
@@ -2831,14 +2823,20 @@
     }
   }
 
-  function logComponentRerender(key, prevented) {
+  function logComponentRerender(key, prevented, prevContents, nextContents) {
     if (prevented) {
       stats.componentRerendersPrevented++;
     } else {
       stats.componentRerendersTriggered++;
 
       if (loggingEnabled) {
-        console.log(`[Recoil] 🔄 Component re-render triggered: "${key}" (data changed)`);
+        console.log(`[Recoil] 🔄 Re-render: "${key}"`);
+
+        if (prevContents !== undefined && nextContents !== undefined) {
+          console.log('   📦 BEFORE:', prevContents);
+          console.log('   📦 AFTER:', nextContents);
+          console.log('   📝 DIFF:', detailedDiff(prevContents, nextContents));
+        }
       }
     }
   }
@@ -5338,7 +5336,9 @@ This is currently a DEV-only warning but will become a thrown exception in the n
         }
 
         if ( prevState != null) {
-          logComponentRerender$1(nextState.key, false);
+          const prevContents = prevState.loadable.state === 'hasValue' ? prevState.loadable.contents : undefined;
+          const nextContents = nextState.loadable.state === 'hasValue' ? nextState.loadable.contents : undefined;
+          logComponentRerender$1(nextState.key, false, prevContents, nextContents);
         }
 
         prevState = nextState;
@@ -5382,7 +5382,9 @@ This is currently a DEV-only warning but will become a thrown exception in the n
       const isEqual = prevState.loadable.is(nextState.loadable) && prevState.key === nextState.key;
 
       {
-        logComponentRerender$1(nextState.key, isEqual);
+        const prevContents = prevState.loadable.state === 'hasValue' ? prevState.loadable.contents : undefined;
+        const nextContents = nextState.loadable.state === 'hasValue' ? nextState.loadable.contents : undefined;
+        logComponentRerender$1(nextState.key, isEqual, prevContents, nextContents);
       }
 
       return isEqual ? prevState : nextState;
@@ -5441,7 +5443,11 @@ This is currently a DEV-only warning but will become a thrown exception in the n
 
         if (!((_prevLoadableRef$curr = prevLoadableRef.current) !== null && _prevLoadableRef$curr !== void 0 && _prevLoadableRef$curr.is(newLoadable))) {
           {
-            logComponentRerender$1(recoilValue.key, false);
+            var _prevLoadableRef$curr2, _prevLoadableRef$curr3;
+
+            const prevContents = ((_prevLoadableRef$curr2 = prevLoadableRef.current) === null || _prevLoadableRef$curr2 === void 0 ? void 0 : _prevLoadableRef$curr2.state) === 'hasValue' ? (_prevLoadableRef$curr3 = prevLoadableRef.current) === null || _prevLoadableRef$curr3 === void 0 ? void 0 : _prevLoadableRef$curr3.contents : undefined;
+            const nextContents = newLoadable.state === 'hasValue' ? newLoadable.contents : undefined;
+            logComponentRerender$1(recoilValue.key, false, prevContents, nextContents);
           } // $FlowFixMe[incompatible-call]
 
 
@@ -5478,7 +5484,7 @@ This is currently a DEV-only warning but will become a thrown exception in the n
           forceUpdate([]);
         });
       } else {
-        var _prevLoadableRef$curr2;
+        var _prevLoadableRef$curr4;
 
         if (!Recoil_gkx('recoil_suppress_rerender_in_callback')) {
           return forceUpdate([]);
@@ -5486,9 +5492,13 @@ This is currently a DEV-only warning but will become a thrown exception in the n
 
         const newLoadable = getLoadable();
 
-        if (!((_prevLoadableRef$curr2 = prevLoadableRef.current) !== null && _prevLoadableRef$curr2 !== void 0 && _prevLoadableRef$curr2.is(newLoadable))) {
+        if (!((_prevLoadableRef$curr4 = prevLoadableRef.current) !== null && _prevLoadableRef$curr4 !== void 0 && _prevLoadableRef$curr4.is(newLoadable))) {
           {
-            logComponentRerender$1(recoilValue.key, false);
+            var _prevLoadableRef$curr5, _prevLoadableRef$curr6;
+
+            const prevContents = ((_prevLoadableRef$curr5 = prevLoadableRef.current) === null || _prevLoadableRef$curr5 === void 0 ? void 0 : _prevLoadableRef$curr5.state) === 'hasValue' ? (_prevLoadableRef$curr6 = prevLoadableRef.current) === null || _prevLoadableRef$curr6 === void 0 ? void 0 : _prevLoadableRef$curr6.contents : undefined;
+            const nextContents = newLoadable.state === 'hasValue' ? newLoadable.contents : undefined;
+            logComponentRerender$1(recoilValue.key, false, prevContents, nextContents);
           } // $FlowFixMe[incompatible-call]
 
 
