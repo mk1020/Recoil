@@ -13,7 +13,7 @@
 
 'use strict';
 
-const {detailedDiff} = require('deep-object-diff');
+const {detailedDiff} = require('./deep-object-diff');
 
 type Stats = {
   atomUpdatesAttempted: number,
@@ -108,7 +108,8 @@ function logComponentRerender(
       if (prevContents !== undefined && nextContents !== undefined) {
         console.log('   📦 BEFORE:', prevContents);
         console.log('   📦 AFTER:', nextContents);
-        console.log('   📝 DIFF:', detailedDiff(prevContents, nextContents));
+        const changes = detailedDiff(prevContents, nextContents);
+        console.log('   📝 DIFF:', changes);
       }
     }
   }
