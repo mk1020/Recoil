@@ -57,7 +57,7 @@ function logAtomUpdate(
   if (prevented) {
     stats.atomUpdatesPrevented++;
     if (loggingEnabled) {
-      console.log(`[Recoil] ⏭️  Atom update PREVENTED: "${key}"`);
+      // console.log(`[Recoil] ⏭️  Atom update PREVENTED: "${key}"`);
     }
   } else {
     if (loggingEnabled) {
@@ -81,7 +81,7 @@ function logSelectorRecalculation(
   if (prevented) {
     stats.selectorRecalculationsPrevented++;
     if (loggingEnabled) {
-      console.log(`[Recoil] ⏭️  Selector PREVENTED: "${key}"`);
+      // console.log(`[Recoil] ⏭️  Selector PREVENTED: "${key}"`);
     }
   } else {
     if (loggingEnabled) {
@@ -105,7 +105,7 @@ function logTransactionUpdate(
   if (prevented) {
     stats.transactionUpdatesPrevented++;
     if (loggingEnabled) {
-      console.log(`[Recoil] ⏭️  Transaction PREVENTED: "${key}"`);
+      // console.log(`[Recoil] ⏭️  Transaction PREVENTED: "${key}"`);
     }
   } else {
     if (loggingEnabled) {
