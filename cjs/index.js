@@ -2983,10 +2983,6 @@ function logAtomUpdate(key, prevented, prevContents, nextContents) {
 
   if (prevented) {
     stats.atomUpdatesPrevented++;
-
-    if (loggingEnabled) {
-      console.log(`[Recoil] ⏭️  Atom update PREVENTED: "${key}"`);
-    }
   } else {
     if (loggingEnabled) {
       if (prevContents !== undefined && nextContents !== undefined) {
@@ -3004,10 +3000,6 @@ function logSelectorRecalculation(key, prevented, prevContents, nextContents) {
 
   if (prevented) {
     stats.selectorRecalculationsPrevented++;
-
-    if (loggingEnabled) {
-      console.log(`[Recoil] ⏭️  Selector PREVENTED: "${key}"`);
-    }
   } else {
     if (loggingEnabled) {
       if (prevContents !== undefined && nextContents !== undefined) {
@@ -3025,10 +3017,6 @@ function logTransactionUpdate(key, prevented, prevContents, nextContents) {
 
   if (prevented) {
     stats.transactionUpdatesPrevented++;
-
-    if (loggingEnabled) {
-      console.log(`[Recoil] ⏭️  Transaction PREVENTED: "${key}"`);
-    }
   } else {
     if (loggingEnabled) {
       if (prevContents !== undefined && nextContents !== undefined) {
