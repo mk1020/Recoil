@@ -2981,7 +2981,7 @@ function logAtomUpdate(key, prevented, prevContents, nextContents) {
     if (loggingEnabled) {
       if (prevContents !== undefined && nextContents !== undefined) {
         const changes = detailedDiff$1(prevContents, nextContents);
-        console.log(`[Recoil] 🔄 Atom: updated "${key}" | BEFORE:`, prevContents, '| AFTER:', nextContents, '| DIFF:', changes);
+        console.log(`[Recoil] 🔄 Atom: updated "${key}" | BEFORE:`, '| AFTER:', '| DIFF:', changes);
       } else {
         console.log(`[Recoil] 🔄 Atom updated: "${key}" (data changed)`);
       }
@@ -2998,7 +2998,7 @@ function logSelectorRecalculation(key, prevented, prevContents, nextContents) {
     if (loggingEnabled) {
       if (prevContents !== undefined && nextContents !== undefined) {
         const changes = detailedDiff$1(prevContents, nextContents);
-        console.log(`[Recoil] 🔄 Selector re-rendered: "${key}" | BEFORE:`, prevContents, '| AFTER:', nextContents, '| DIFF:', changes);
+        console.log(`[Recoil] 🔄 Selector re-rendered: "${key}" | BEFORE:`, '| AFTER:', '| DIFF:', changes);
       } else {
         console.log(`[Recoil] 🔄 Selector updated: "${key}" (data changed)`);
       }
@@ -3015,7 +3015,7 @@ function logTransactionUpdate(key, prevented, prevContents, nextContents) {
     if (loggingEnabled) {
       if (prevContents !== undefined && nextContents !== undefined) {
         const changes = detailedDiff$1(prevContents, nextContents);
-        console.log(`[Recoil] 🔄 Transaction applied: "${key}" | BEFORE:`, prevContents, '| AFTER:', nextContents, '| DIFF:', changes);
+        console.log(`[Recoil] 🔄 Transaction applied: "${key}" | BEFORE:`, '| AFTER:', '| DIFF:', changes);
       } else {
         console.log(`[Recoil] 🔄 Transaction applied: "${key}" (data changed)`);
       }
